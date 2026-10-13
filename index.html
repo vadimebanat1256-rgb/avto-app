@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Номерок | Генератор</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #000;
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Снежинки */
+        .snow-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .snowflake {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+            opacity: 0.7;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-10px); }
+            100% { transform: translateY(100vh); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 15px 20px 100px;
+            min-height: 100vh;
+        }
+
+        /* Верхняя панель */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-top: 10px;
+        }
+
+        .menu-btn {
+            font-size: 28px;
+            cursor: pointer;
+            padding: 5px 10px;
+            z-index: 60;
+        }
+
+        .level-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .clover-wrapper {
+            position: relative;
+            width: 44px;
+            height: 44px;
+        }
+
+        .clover-bg {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #222;
+        }
+
+        .clover-fill {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: conic-gradient(#4ade80 0deg 0deg, transparent 0deg 360deg);
+            mask: radial-gradient(transparent 62%, black 62%);
+            -webkit-mask: radial-gradient(transparent 62%, black 62%);
+            transition: all 0.3s ease;
+        }
+
+        .clover-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            z-index: 1;
+        }
+
+        .level-text {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .balance {
+            font-size: 19px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        /* Боковое меню */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 280px;
+            height: 100%;
+            background: #111;
+            z-index: 100;
+            transition: left 0.3s ease;
+            padding: 20px;
+            border-right: 1px solid #333;
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .sidebar-close {
+            text-align: right;
+            font-size: 24px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            margin-bottom: 8px;
+            background: #222;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .sidebar-item:hover {
+            background: #333;
+        }
+
+        .sidebar-item .icon {
+            font-size: 24px;
+        }
+
+        /* Полоска редкости — НАД номером */
+        .rarity-bar-container {
+            width: 100%;
+            height: 10px;
+            background: #222;
+            border-radius: 5px;
+            margin: 40px 0 10px;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .rarity-segment {
+            height: 100%;
+            transition: all 0.3s;
+        }
+
+        .rarity-label {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        /* Номер — чуть пониже */
+        .number-display {
+            text-align: center;
+            margin: 30px 0 50px;
+        }
+
+        .number-text {
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .region-text {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .number-analyze {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #888;
+            min-height: 36px;
+            padding: 0 10px;
+            line-height: 1.4;
+        }
+
+        /* Кнопка КРУТИТЬ — широкая, снизу */
+        .spin-btn {
+            display: block;
+            width: 100%;
+            max-width: 440px;
+            height: 65px;
+            margin: 0 auto 30px;
+            border: none;
+            border-radius: 35px;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            background: linear-gradient(45deg, #ff0080, #ff8c00, #40e0d0, #8a2be2);
+            background-size: 400% 400%;
+            animation: rainbow 3s ease infinite;
+            color: white;
+            transition: transform 0.15s, opacity 0.2s;
+        }
+
+        .spin-btn:active {
+            transform: scale(0.97);
+        }
+
+        .spin-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Нижняя навигация */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 20px 20px;
+            background: linear-gradient(to top, #000 70%, transparent);
+            z-index: 50;
+        }
+
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 11px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nav-btn.active {
+            color: #fff;
+        }
+
+        .nav-icon {
+            font-size: 22px;
+        }
+
+        /* Остальные экраны */
+        .screen {
+            display: none;
+            width: 100%;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        h2.modal-title {
+            font-size: 22px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .close-btn {
+            text-align: right;
+            font-size: 22px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        /* Контейнеры */
+        .containers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .container-card {
+            background: #222;
+            border-radius: 12px;
+            padding: 18px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 1px solid #333;
+        }
+
+        .container-card:hover {
+            transform: scale(1.03);
+        }
+
+        .container-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+        }
+
+        .container-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .container-price {
+            font-size: 12px;
+            color: #ffd700;
+        }
+
+        .container-ultra {
+            grid-column: span 2;
+            background: linear-gradient(135deg, #2a1a4a, #1a2a4a);
+            border-color: #6a4acf;
+        }
+
+        /* Сим-карты */
+        .sim-card {
+            background: linear-gradient(135deg, #1e3a5f, #2a4a6f);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid #3a5a7f;
+        }
+
+        .sim-image {
+            width: 60px;
+            height: 40px;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .sim-number {
+            font-size: 17px;
+            font-family: monospace;
+            margin-bottom: 5px;
+        }
+
+        .sim-rarity {
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .rarity-common { background: #444; color: #fff; }
+        .rarity-rare { background: #0066cc; color: #fff; }
+        .rarity-epic { background: #9933cc; color: #fff; }
+        .rarity-mythic { background: #cc33cc; color: #fff; }
+        .rarity-legendary { background: #cc9900; color: #fff; }
+
+        /* Страны */
+        .countries-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .country-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .country-item.active {
+            background: #3a3a3a;
+            border: 1px solid #555;
+        }
+
+        .flag {
+            font-size: 20px;
+        }
+
+        /* Модалки */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.92);
+            z-index: 80;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 22px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid #333;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Колесо фортуны */
+        .fortune-wheel {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #ff4444 0deg 45deg,
+                #ff8800 45deg 90deg,
+                #ffcc00 90deg 135deg,
+                #88cc00 135deg 180deg,
+                #00ccff 180deg 225deg,
+                #8844ff 225deg 270deg,
+                #ff44ff 270deg 315deg,
+                #ffffff 315deg 360deg
+            );
+            margin: 20px auto;
+            position: relative;
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+        }
+
+        .spin-wheel-btn {
+            padding: 12px 30px;
+            background: #ffd700;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* Рулетка контейнера */
+        .wheel-slots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .wheel-slot {
+            width: 90px;
+            height: 130px;
+            background: #222;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #444;
+            flex-shrink: 0;
+        }
+
+        .wheel-slot.highlight {
+            border-color: #ffd700;
+            transform: scale(1.08);
+        }
+
+        .phone-icon {
+            font-size: 36px;
+            margin-bottom: 5px;
+        }
+
+        .phone-name {
+            font-size: 9px;
+            text-align: center;
+            padding: 0 4px;
+        }
+
+        .skip-btn {
+            padding: 10px 25px;
+            background: #333;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 15px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        /* Рефералка */
+        .ref-link {
+            background: #222;
+            padding: 12px;
+            border-radius: 8px;
+            word-break: break-all;
+            font-size: 12px;
+            margin: 15px 0;
+            color: #88ccff;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .daily-btn {
+            padding: 12px 30px;
+            background: linear-gradient(45deg, #ffd700, #ff8c00);
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Снежинки -->
+    <div class="snow-container" id="snowContainer"></div>
+
+    <!-- Боковое меню -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-close" onclick="closeSidebar()">✕</div>
+        <div class="sidebar-item" onclick="openSection('phones')">
+            <span class="icon">📱</span>
+            <span>Айфон</span>
+        </div>
+        <div class="sidebar-item" onclick="openSection('garage')">
+            <span class="icon">📦</span>
+            <span>Контейнеры</span>
+        </div>
+        <div class="sidebar-item" onclick="openSection('market')">
+            <span class="icon">🛒</span>
+            <span>Рынок</span>
+        </div>
+        <div class="sidebar-item" onclick="openSection('tasks')">
+            <span class="icon">📋</span>
+            <span>Задания</span>
+        </div>
+        <div class="sidebar-item" onclick="openSection('wheel')">
+            <span class="icon">🎡</span>
+            <span>Колесо Фортуны</span>
+        </div>
+        <div class="sidebar-item" onclick="openDailyGift()">
+            <span class="icon">🎁</span>
+            <span>Подарок</span>
+        </div>
+        <div class="sidebar-item" onclick="openSection('referral')">
+            <span class="icon">👥</span>
+            <span>Друзья</span>
+        </div>
+        <div class="sidebar-item" onclick="openSection('country')">
+            <span class="icon">🌍</span>
+            <span>Страна</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Верхняя панель -->
+        <div class="top-bar">
+            <div class="menu-btn" onclick="openSidebar()">☰</div>
+            <div class="level-container">
+                <div class="clover-wrapper">
+                    <div class="clover-bg"></div>
+                    <div class="clover-fill" id="cloverFill"></div>
+                    <span class="clover-icon">🍀</span>
+                </div>
+                <span class="level-text" id="levelText">Ур. 1</span>
+            </div>
+            <div class="balance" id="balance">10 000 ₽</div>
+        </div>
+
+        <!-- Основной экран -->
+        <div id="mainScreen" class="screen active">
+            <!-- Полоска редкости НАД номером -->
+            <div class="rarity-bar-container">
+                <div class="rarity-segment" style="width:55%; background:#666;"></div>
+                <div class="rarity-segment" style="width:25%; background:#0066cc;"></div>
+                <div class="rarity-segment" style="width:12%; background:#9933cc;"></div>
+                <div class="rarity-segment" style="width:5%; background:#cc33cc;"></div>
+                <div class="rarity-segment" style="width:3%; background:#cc9900;"></div>
+            </div>
+            <div class="rarity-label" id="rarityLabel">Обычный</div>
+
+            <!-- Номер -->
+            <div class="number-display">
+                <div class="number-text" id="numberDisplay">+7 XXX XXX XX XX</div>
+                <div class="region-text" id="regionText"></div>
+                <div class="number-analyze" id="analyzeText"></div>
+            </div>
+
+            <!-- Кнопка КРУТИТЬ — широкая, снизу -->
+            <button class="spin-btn" id="spinBtn" onclick="spinNumber()">КРУТИТЬ</button>
+        </div>
+
+        <!-- Экран сим-карт -->
+        <div id="phonesScreen" class="screen">
+            <div class="close-btn" onclick="showScreen('main')">✕</div>
+            <h2 class="modal-title">📱 Мои Сим-карты</h2>
+            <div id="simList">
+                <p style="text-align:center; color:#666; padding:40px 20px;">Пока нет сим-карт<br>Крути номер!</p>
+            </div>
+        </div>
+
+        <!-- Контейнеры -->
+        <div id="garageScreen" class="screen">
+            <div class="close-btn" onclick="showScreen('main')">✕</div>
+            <h2 class="modal-title">📦 Контейнеры</h2>
+            <div class="containers-grid">
+                <div class="container-card" onclick="openContainer('common')">
+                    <div class="container-icon">📦</div>
+                    <div class="container-name">Обычный</div>
+                    <div class="container-price">10 000 ₽</div>
+                </div>
+                <div class="container-card" onclick="openContainer('rare')">
+                    <div class="container-icon">📦</div>
+                    <div class="container-name">Редкий</div>
+                    <div class="container-price">30 000 ₽</div>
+                </div>
+                <div class="container-card" onclick="openContainer('epic')">
+                    <div class="container-icon">📦</div>
+                    <div class="container-name">Эпический</div>
+                    <div class="container-price">100 000 ₽</div>
+                </div>
+                <div class="container-card" onclick="openContainer('mythic')">
+                    <div class="container-icon">📦</div>
+                    <div class="container-name">Мифический</div>
+                    <div class="container-price">300 000 ₽</div>
+                </div>
+                <div class="container-card" onclick="openContainer('legendary')">
+                    <div class="container-icon">📦</div>
+                    <div class="container-name">Легендарный</div>
+                    <div class="container-price">1 000 000 ₽</div>
+                </div>
+                <div class="container-card container-ultra" onclick="openContainer('ultra')">
+                    <div class="container-icon">✨</div>
+                    <div class="container-name">Ультра контейнер</div>
+                    <div class="container-price">20 ⭐</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Рынок -->
+        <div id="marketScreen" class="screen">
+            <div class="close-btn" onclick="showScreen('main')">✕</div>
+            <h2 class="modal-title">🏆 Рынок</h2>
+            <p style="text-align:center; color:#888; padding:40px 20px;">Скоро можно будет выставлять номера на продажу!</p>
+        </div>
+
+        <!-- Задания -->
+        <div id="tasksScreen" class="screen">
+            <div class="close-btn" onclick="showScreen('main')">✕</div>
+            <h2 class="modal-title">📋 Задания</h2>
+            <div style="background:#222; padding:15px; border-radius:8px; margin-bottom:10px;">
+                <strong>🎰 Крути 10 раз</strong><br>
+                <span style="color:#888;">Награда: 5 000 ₽</span>
+            </div>
+            <div style="background:#222; padding:15px; border-radius:8px; margin-bottom:10px;">
+                <strong>👥 Пригласи 1 друга</strong><br>
+                <span style="color:#888;">Награда: Редкий номер</span>
+            </div>
+            <div style="background:#222; padding:15px; border-radius:8px;">
+                <strong>📱 Собери 5 номеров</strong><br>
+                <span style="color:#888;">Награда: 10 000 ₽</span>
+            </div>
+        </div>
+
+        <!-- Колесо Фортуны -->
+        <div id="wheelScreen" class="screen">
+            <div class="close-btn" onclick="showScreen('main')">✕</div>
+            <h2 class="modal-title">🎡 Колесо Фортуны</h2>
+            <div class="fortune-wheel" id="fortuneWheel">
+                <div class="wheel-pointer">▼</div>
+            </div>
+            <button class="spin-wheel-btn" onclick="spinWheel()">КРУТИТЬ</button>
+            <p style="text-align:center; color:#888; margin-top:15px; font-size:14px;">Бесплатно раз в день!</p>
+        </div>
+
+        <!-- Друзья / Рефералка -->
+        <div id="referralScreen" class="screen">
+            <div class="close-btn" onclick="showScreen('main')">✕</div>
+            <h2 class="modal-title">👥 Приглашай друзей</h2>
+            <p style="text-align:center;">Пригласи 5 друзей и получишь <span style="color:#cc33cc; font-weight:bold;">Мифический номер!</span></p>
+            <div class="ref-link" id="refLink">t.me/yourbot?start=ref123</div>
+            <button class="action-btn" onclick="copyRefLink()">Скопировать ссылку</button>
+            <p style="text-align:center; margin-top:15px; color:#888;">Приглашено: <span id="refCount">0</span>/5</p>
+        </div>
+
+        <!-- Выбор страны -->
+        <div id="countryScreen" class="screen">
+            <div class="close-btn" onclick="showScreen('main')">✕</div>
+            <h2 class="modal-title">🌍 Выбери страну</h2>
+            <p style="text-align:center; color:#888; margin-bottom:15px; font-size:14px;">У каждой страны свой кошелёк</p>
+            <div class="countries-grid">
+                <div class="country-item active" onclick="selectCountry('🇷🇺', 'Россия')">
+                    <span class="flag">🇷🇺</span>
+                    <span>Россия</span>
+                </div>
+                <div class="country-item" onclick="selectCountry('🇰🇿', 'Казахстан')">
+                    <span class="flag">🇰🇿</span>
+                    <span>Казахстан</span>
+                </div>
+                <div class="country-item" onclick="selectCountry('🇧🇾', 'Беларусь')">
+                    <span class="flag">🇧🇾</span>
+                    <span>Беларусь</span>
+                </div>
+                <div class="country-item" onclick="selectCountry('🇺🇸', 'США')">
+                    <span class="flag">🇺🇸</span>
+                    <span>США</span>
+                </div>
+                <div class="country-item" onclick="selectCountry('🇩🇪', 'Германия')">
+                    <span class="flag">🇩🇪</span>
+                    <span>Германия</span>
+                </div>
+                <div class="country-item" onclick="selectCountry('🇺🇦', 'Украина')">
+                    <span class="flag">🇺🇦</span>
+                    <span>Украина</span>
+                </div>
+                <div class="country-item" onclick="selectCountry('🇦🇪', 'ОАЭ')">
+                    <span class="flag">🇦🇪</span>
+                    <span>ОАЭ</span>
+                </div>
+                <div class="country-item" onclick="selectCountry('🇬🇪', 'Грузия')">
+                    <span class="flag">🇬🇪</span>
+                    <span>Грузия</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка ежедневного подарка -->
+    <div class="modal-overlay" id="dailyModalOverlay">
+        <div class="modal daily-modal" style="text-align:center;">
+            <div class="close-btn" onclick="closeDailyGift()">✕</div>
+            <h3>🎁 Ежедневный подарок</h3>
+            <p>Заходи каждый день и получай бонусы!</p>
+            <p style="font-size:13px; color:#888; margin-top:10px;">День 1: 5 000 ₽<br>День 7: Редкий номер<br>День 30: Эпический номер</p>
+            <button class="daily-btn" onclick="claimDailyGift()">Забрать</button>
+        </div>
+    </div>
+
+    <!-- Модалка контейнера -->
+    <div class="modal-overlay" id="containerModalOverlay">
+        <div class="modal wheel-container" style="text-align:center;">
+            <div class="close-btn" onclick="closeContainerModal()">✕</div>
+            <h3 id="containerTitle">Открытие контейнера</h3>
+            <div class="wheel-slots" id="wheelSlots"></div>
+            <button class="skip-btn" onclick="skipContainer()">Пропустить</button>
+        </div>
+    </div>
+
+    <!-- Нижняя навигация -->
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="showScreen('main')">
+            <span class="nav-icon">🎰</span>
+            <span>Крутить</span>
+        </button>
+        <button class="nav-btn" onclick="showScreen('phones')">
+            <span class="nav-icon">📱</span>
+            <span>Айфон</span>
+        </button>
+        <button class="nav-btn" onclick="showScreen('garage')">
+            <span class="nav-icon">📦</span>
+            <span>Контейнеры</span>
+        </button>
+        <button class="nav-btn" onclick="showScreen('market')">
+            <span class="nav-icon">🛒</span>
+            <span>Рынок</span>
+        </button>
+        <button class="nav-btn" onclick="showScreen('referral')">
+            <span class="nav-icon">👥</span>
+            <span>Друзья</span>
+        </button>
+    </div>
+
+    <script>
+        // ДАННЫЕ ИГРЫ
+        let gameData = {
+            balance: 10000,
+            stars: 5,
+            level: 1,
+            xp: 0,
+            xpNeeded: 100,
+            currentCountry: 'Россия',
+            simCards: [],
+            refCount: 0,
+            lastDaily: null,
+            totalSpins: 0,
+            isSpinning: false
+        };
+
+        // Сохранение/загрузка
+        function saveData() {
+            try {
+                localStorage.setItem('numberokData', JSON.stringify(gameData));
+            } catch(e) {}
+        }
+
+        function loadData() {
+            try {
+                const saved = localStorage.getItem('numberokData');
+                if (saved) gameData = { ...gameData, ...JSON.parse(saved) };
+            } catch(e) {}
+            updateUI();
+            updateSimList();
+        }
+
+        // Регионы России
+        const regions = [
+            { name: 'Москва', code: ['495', '903', '915', '916', '926'] },
+            { name: 'Санкт-Петербург', code: ['812', '921', '931'] },
+            { name: 'Московская обл.', code: ['498', '905', '916'] },
+            { name: 'Краснодарский край', code: ['918', '988'] },
+            { name: 'Свердловская обл.', code: ['343', '912', '922'] },
+            { name: 'Татарстан', code: ['843', '917', '927'] },
+            { name: 'Новосибирская обл.', code: ['383', '913', '923'] },
+            { name: 'Нижегородская обл.', code: ['831', '904', '920'] },
+            { name: 'Самарская обл.', code: ['846', '917', '927'] },
+            { name: 'Башкортостан', code: ['347', '917', '927'] },
+            { name: 'Челябинская обл.', code: ['351', '912', '922'] },
+            { name: 'Ростовская обл.', code: ['863', '918', '928'] },
+            { name: 'Пермский край', code: ['342', '902', '922'] },
+            { name: 'Волгоградская обл.', code: ['844', '917', '937'] },
+            { name: 'Воронежская обл.', code: ['473', '920', '952'] }
+        ];
+
+        // Шансы редкостей
+        const rarities = {
+            common: { name: 'Обычный', chance: 55, color: '#888', price: 100, bonus: 0 },
+            rare: { name: 'Редкий', chance: 25, color: '#0066cc', price: 1000, bonus: 100 },
+            epic: { name: 'Эпический', chance: 12, color: '#9933cc', price: 5000, bonus: 500 },
+            mythic: { name: 'Мифический', chance: 5, color: '#cc33cc', price: 25000, bonus: 2500 },
+            legendary: { name: 'Легендарный', chance: 3, color: '#cc9900', price: 100000, bonus: 10000 }
+        };
+
+        // Анализ номера
+        function analyzeNumber(num) {
+            const digits = num.replace(/\D/g, '');
+            let notes = [];
+            let bonus = 0;
+
+            if (digits.endsWith('5555')) { notes.push('🔥 Четыре пятёрки!'); bonus += 500; }
+            else if (digits.endsWith('777')) { notes.push('🔥 Три семёрки!'); bonus += 300; }
+            else if (digits.endsWith('000')) { notes.push('⚡ Круглое число!'); bonus += 200; }
+            else if (digits.endsWith('1234')) { notes.push('📈 По порядку!'); bonus += 400; }
+            else if (/(\d)\1{3}/.test(digits)) { notes.push('✨ 4 одинаковые!'); bonus += 600; }
+            else if (/(\d)\1{2}/.test(digits)) { notes.push('✦ 3 одинаковые'); bonus += 100; }
+
+            if (digits === digits.split('').reverse().join('')) {
+                notes.push('🪞 Зеркальный!'); bonus += 350;
+            }
+
+            return { text: notes.join(' '), bonus };
+        }
+
+        // Генерация номера
+        function generateNumber() {
+            const region = regions[Math.floor(Math.random() * regions.length)];
+            const code = region.code[Math.floor(Math.random() * region.code.length)];
+            let last7 = '';
+            for (let i = 0; i < 7; i++) last7 += Math.floor(Math.random() * 10);
+            const number = `+7 ${code} ${last7.slice(0,3)} ${last7.slice(3,5)} ${last7.slice(5,7)}`;
+            return { number, region: region.name };
+        }
+
+        // Определение редкости
+        function getRarity() {
+            const roll = Math.random() * 100;
+            if (roll < rarities.legendary.chance) return 'legendary';
+            if (roll < rarities.legendary.chance + rarities.mythic.chance) return 'mythic';
+            if (roll < rarities.legendary.chance + rarities.mythic.chance + rarities.epic.chance) return 'epic';
+            if (roll < rarities.legendary.chance + rarities.mythic.chance + rarities.epic.chance + rarities.rare.chance) return 'rare';
+            return 'common';
+        }
+
+        // Анимация прокрутки
+        async function spinNumber() {
+            if (gameData.isSpinning) return;
+            gameData.isSpinning = true;
+            document.getElementById('spinBtn').disabled = true;
+
+            let spinCount = 0;
+            const spinInterval = setInterval(() => {
+                const { number } = generateNumber();
+                let display = number.split('');
+                for (let i = 3; i < display.length; i++) {
+                    if (display[i] !== ' ') display[i] = Math.floor(Math.random() * 10);
+                }
+                document.getElementById('numberDisplay').textContent = display.join('');
+                spinCount++;
+            }, 70);
+
+            setTimeout(() => {
+                clearInterval(spinInterval);
+                
+                const { number, region } = generateNumber();
+                const rarityKey = getRarity();
+                const rarity = rarities[rarityKey];
+                const analysis = analyzeNumber(number);
+
+                document.getElementById('numberDisplay').textContent = number;
+                document.getElementById('regionText').textContent = region;
+                document.getElementById('rarityLabel').textContent = rarity.name;
+                document.getElementById('rarityLabel').style.color = rarity.color;
+                document.getElementById('analyzeText').textContent = analysis.text;
+
+                // Начисления
+                gameData.balance += rarity.bonus + analysis.bonus;
+                gameData.xp += 5;
+                gameData.totalSpins++;
+
+                // Сохранение номера
+                if (rarityKey !== 'common') {
+                    gameData.simCards.push({
+                        id: Date.now(),
+                        number,
+                        region,
+                        rarity: rarityKey,
+                        price: rarity.price
+                    });
+                    updateSimList();
+                }
+
+                checkLevelUp();
+                updateUI();
+                saveData();
+
+                gameData.isSpinning = false;
+                document.getElementById('spinBtn').disabled = false;
+            }, 1800);
+        }
+
+        // Повышение уровня
+        function checkLevelUp() {
+            if (gameData.xp >= gameData.xpNeeded) {
+                gameData.level++;
+                gameData.xp = gameData.xp - gameData.xpNeeded;
+                gameData.xpNeeded = Math.floor(gameData.xpNeeded * 1.5);
+                gameData.balance += gameData.level * 1000;
+                updateUI();
+            }
+        }
+
+        // Обновление интерфейса
+        function updateUI() {
+            document.getElementById('balance').textContent = gameData.balance.toLocaleString() + ' ₽';
+            document.getElementById('levelText').textContent = `Ур. ${gameData.level}`;
+            
+            const xpPercent = (gameData.xp / gameData.xpNeeded) * 100;
+            const degrees = (xpPercent / 100) * 360;
+            document.getElementById('cloverFill').style.background = 
+                `conic-gradient(#4ade80 0deg ${degrees}deg, transparent ${degrees}deg 360deg)`;
+        }
+
+        // Обновление списка сим-карт
+        function updateSimList() {
+            const container = document.getElementById('simList');
+            const highRarity = gameData.simCards.filter(s => s.rarity !== 'common').reverse();
+
+            if (highRarity.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#666; padding:40px 20px;">Пока нет редких номеров<br>Крути больше!</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            highRarity.forEach(sim => {
+                const r = rarities[sim.rarity];
+                container.innerHTML += `
+                    <div class="sim-card">
+                        <div class="sim-image"></div>
+                        <div class="sim-number">${sim.number}</div>
+                        <span class="sim-rarity rarity-${sim.rarity}">${r.name} • ${sim.region}</span>
+                        <div style="margin-top:6px; font-size:12px; color:#888;">Цена: ${sim.price.toLocaleString()} ₽</div>
+                    </div>
+                `;
+            });
+        }
+
+        // Открытие контейнера
+        async function openContainer(type) {
+            const prices = {
+                common: { cost: 10000, currency: 'balance' },
+                rare: { cost: 30000, currency: 'balance' },
+                epic: { cost: 100000, currency: 'balance' },
+                mythic: { cost: 300000, currency: 'balance' },
+                legendary: { cost: 1000000, currency: 'balance' },
+                ultra: { cost: 20, currency: 'stars' }
+            };
+
+            const price = prices[type];
+            
+            if (price.currency === 'balance' && gameData.balance < price.cost) {
+                alert('Недостаточно средств!');
+                return;
+            }
+            if (price.currency === 'stars' && gameData.stars < price.cost) {
+                alert('Недостаточно звёзд!');
+                return;
+            }
+
+            if (price.currency === 'balance') gameData.balance -= price.cost;
+            else gameData.stars -= price.cost;
+            updateUI();
+
+            // Определение награды
+            let rewardRarity;
+            const roll = Math.random() * 100;
+            
+            switch(type) {
+                case 'common': rewardRarity = roll < 90 ? 'common' : 'rare'; break;
+                case 'rare': rewardRarity = roll < 70 ? 'rare' : (roll < 95 ? 'epic' : 'mythic'); break;
+                case 'epic': rewardRarity = roll < 60 ? 'epic' : (roll < 90 ? 'mythic' : 'legendary'); break;
+                case 'mythic': rewardRarity = roll < 50 ? 'mythic' : 'legendary'; break;
+                case 'legendary': rewardRarity = 'legendary'; break;
+                case 'ultra': rewardRarity = roll < 30 ? 'mythic' : 'legendary'; break;
+            }
+
+            // Анимация рулетки
+            const phones = ['📱 SE', '📱 12', '📱 13', '📱 14', '📱 15', '📱 Pro'];
+            const slotsContainer = document.getElementById('wheelSlots');
+            slotsContainer.innerHTML = '';
+            
+            phones.forEach(p => {
+                slotsContainer.innerHTML += `
+                    <div class="wheel-slot">
+                        <div class="phone-icon">📱</div>
+                        <div class="phone-name">${p}</div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('containerTitle').textContent = 
+                type.charAt(0).toUpperCase() + type.slice(1) + ' контейнер';
+            document.getElementById('containerModalOverlay').classList.add('active');
+
+            const slots = slotsContainer.querySelectorAll('.wheel-slot');
+            let highlightIndex = 0;
+            let rounds = 0;
+            const maxRounds = 12;
+            
+            const animInterval = setInterval(() => {
+                slots.forEach(s => s.classList.remove('highlight'));
+                slots[highlightIndex].classList.add('highlight');
+                highlightIndex = (highlightIndex + 1) % slots.length;
+                rounds++;
+                
+                if (rounds >= maxRounds) {
+                    clearInterval(animInterval);
+                    
+                    const { number, region } = generateNumber();
+                    const r = rarities[rewardRarity];
+                    
+                    gameData.simCards.push({
+                        id: Date.now(),
+                        number,
+                        region,
+                        rarity: rewardRarity,
+                        price: r.price
+                    });
+                    
+                    slotsContainer.innerHTML = `
+                        <div class="wheel-slot highlight" style="border-color:${r.color}; transform:scale(1.15);">
+                            <div class="phone-icon">📱</div>
+                            <div class="phone-name" style="font-size:11px;">${number}</div>
+                            <div style="font-size:10px; color:${r.color};">${r.name}</div>
+                            <div style="font-size:9px; color:#888;">${region}</div>
+                        </div>
+                    `;
+                    updateSimList();
+                    saveData();
+                }
+            }, 90);
+        }
+
+        function skipContainer() {
+            document.getElementById('containerModalOverlay').classList.remove('active');
+        }
+
+        function closeContainerModal() {
+            document.getElementById('containerModalOverlay').classList.remove('active');
+        }
+
+        // Колесо фортуны
+        function spinWheel() {
+            const wheel = document.getElementById('fortuneWheel');
+            wheel.style.transform = `rotate(${Math.random() * 360 + 1800}deg)`;
+            setTimeout(() => {
+                const rewards = [1000, 5000, 10000, 50000, 100, 500, 1, 3];
+                const reward = rewards[Math.floor(Math.random() * rewards.length)];
+                if (reward >= 100) {
+                    gameData.balance += reward;
+                    alert(`🎉 +${reward.toLocaleString()} ₽`);
+                } else {
+                    gameData.stars += reward;
+                    alert(`🎉 +${reward} ⭐`);
+                }
+                updateUI();
+                saveData();
+            }, 4000);
+        }
+
+        // Ежедневный подарок
+        function openDailyGift() {
+            document.getElementById('dailyModalOverlay').classList.add('active');
+        }
+
+        function closeDailyGift() {
+            document.getElementById('dailyModalOverlay').classList.remove('active');
+        }
+
+        function claimDailyGift() {
+            const today = new Date().toDateString();
+            if (gameData.lastDaily === today) {
+                alert('Приходи завтра!');
+                closeDailyGift();
+                return;
+            }
+            gameData.lastDaily = today;
+            gameData.balance += 5000;
+            updateUI();
+            saveData();
+            alert('+5 000 ₽! 🎉');
+            closeDailyGift();
+        }
+
+        // Выбор страны
+        function selectCountry(flag, name) {
+            gameData.currentCountry = name;
+            document.querySelectorAll('.country-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            saveData();
+        }
+
+        // Рефералка
+        function copyRefLink() {
+            const link = document.getElementById('refLink').textContent;
+            navigator.clipboard.writeText(link).then(() => alert('Ссылка скопирована! 👥'));
+        }
+
+        // Навига
