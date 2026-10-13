@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>НОМЕРОК | Генератор</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        :root {
+            --bg-dark: #000000;
+            --bg-card: #2a2a2a;
+            --bg-card-hover: #383838;
+            --text-white: #ffffff;
+            --text-gray: #999999;
+            --common: #b0b0b0;
+            --rare: #4da6ff;
+            --epic: #a855f7;
+            --mythic: #f43f5e;
+            --legendary: #fbbf24;
+            --green: #22c55e;
+        }
+        body {
+            background: var(--bg-dark);
+            color: var(--text-white);
+            min-height: 100vh;
+            padding-bottom: 90px;
+        }
+
+        /* === КНОПКА МЕНЮ === */
+        .menu-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+        }
+        .menu-btn {
+            background: none;
+            border: none;
+            color: var(--text-white);
+            font-size: 24px;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .level-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .clover-circle {
+            position: relative;
+            width: 44px;
+            height: 44px;
+        }
+        .clover-bg {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--bg-card);
+        }
+        .clover-fill {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: conic-gradient(var(--green) 0deg, var(--green) var(--deg, 0deg), var(--bg-card) var(--deg, 0deg), var(--bg-card) 360deg);
+            mask: radial-gradient(transparent 26px, black 26px);
+            -webkit-mask: radial-gradient(transparent 26px, black 26px);
+            transform: rotate(-90deg);
+        }
+        .clover-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+        }
+        .level-text {
+            font-size: 14px;
+        }
+        .level-num { font-weight: 700; font-size: 18px; }
+        .balance-top {
+            text-align: right;
+        }
+        .balance-val { font-size: 18px; font-weight: 700; color: var(--legendary); }
+
+        /* === ВЫПАДАЮЩЕЕ МЕНЮ === */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 99;
+            display: none;
+        }
+        .sidebar-overlay.show { display: block; }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            background: var(--bg-card);
+            z-index: 100;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            padding: 20px;
+        }
+        .sidebar.show { transform: translateX(0); }
+        .sidebar-close {
+            text-align: right;
+            font-size: 24px;
+            color: var(--text-gray);
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 12px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .sidebar-item:hover { background: var(--bg-card-hover); }
+        .sidebar-icon { font-size: 22px; width: 28px; text-align: center; }
+
+        /* === ВЫБОР СТРАНЫ === */
+        .country-selector {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin: 10px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .country-list-modal {
+            max-width: 400px !important;
+        }
+        .country-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .country-option:hover { background: var(--bg-card-hover); }
+        .country-flag { font-size: 24px; }
+
+        /* === ПОЛОСКА РЕДКОСТИ === */
+        .rarity-bar-container {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .rarity-name { font-size: 18px; font-weight: 600; }
+        .rarity-price { font-size: 18px; font-weight: 700; }
+        .rarity-steps {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .rarity-step {
+            width: 24px;
+            height: 6px;
+            border-radius: 3px;
+            background: #444;
+        }
+        .rarity-step.active-common { background: var(--common); }
+        .rarity-step.active-rare { background: var(--rare); }
+        .rarity-step.active-epic { background: var(--epic); }
+        .rarity-step.active-mythic { background: var(--mythic); }
+        .rarity-step.active-legendary { background: var(--legendary); }
+
+        /* === ДИСПЛЕЙ НОМЕРА === */
+        .phone-display-wrap {
+            text-align: center;
+            padding: 20px;
+        }
+        .phone-display {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            padding: 24px 20px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            display: inline-block;
+            min-width: 300px;
+        }
+        .phone-prefix { color: var(--text-gray); }
+        .phone-suffix { 
+            color: var(--text-white);
+            transition: color 0.3s;
+        }
+        .phone-suffix.rolling { animation: pulse 0.1s infinite; }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+        .bot-comment {
+            font-size: 12px;
+            color: var(--text-gray);
+            margin-top: 10px;
+            min-height: 36px;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.4;
+        }
+        .location-text {
+            font-size: 13px;
+            color: var(--text-gray);
+            margin-top: 8px;
+        }
+
+        /* === КНОПКА КРУТИТЬ === */
+        .roll-btn {
+            display: block;
+            width: calc(100% - 32px);
+            margin: 20px 16px;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(90deg, var(--rare), var(--epic), var(--mythic), var(--legendary));
+            color: #fff;
+            cursor: pointer;
+            background-size: 300% 100%;
+            animation: gradientShift 3s linear infinite;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 300% 50%; }
+        }
+        .roll-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* === КОНТЕЙНЕРЫ / КОРОБКИ === */
+        .containers-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 16px;
+        }
+        .container-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .container-card:hover { transform: translateY(-2px); background: var(--bg-card-hover); }
+        .container-icon { font-size: 40px; margin-bottom: 8px; }
+        .container-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        .container-price { font-size: 14px; color: var(--text-gray); }
+        .container-bonus { font-size: 11px; margin-top: 4px; }
+        .uncommon { color: var(--common); }
+        .rare { color: var(--rare); }
+        .epic { color: var(--epic); }
+        .mythic { color: var(--mythic); }
+        .legendary { color: var(--legendary); }
+
+        /* === МОИ НОМЕРА === */
+        .numbers-list { padding: 16px; }
+        .number-item {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 10px;
+        }
+        .number-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .number-str { font-size: 18px; font-weight: 600; }
+        .number-price { font-size: 15px; font-weight: 700; }
+        .number-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .num-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .sell-btn { background: var(--green); color: #fff; }
+        .market-btn { background: var(--legendary); color: #000; }
+
+        /* === НИЖНЯЯ НАВИГАЦИЯ === */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            border-top: 1px solid #333;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: var(--text-gray);
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .nav-item.active { color: var(--legendary); }
+        .nav-icon { font-size: 22px; }
+
+        /* === МОДАЛКИ === */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 20px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 340px;
+            width: 100%;
+            text-align: center;
+        }
+        .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 12px; }
+        .modal-text { font-size: 14px; color: var(--text-gray); margin-bottom: 20px; line-height: 1.5; }
+        .modal-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+        .modal-btn.primary { 
+            background: linear-gradient(90deg, var(--rare), var(--epic), var(--mythic), var(--legendary));
+            color: #fff; 
+            font-weight: 600; 
+        }
+        .modal-btn.secondary { background: #444; color: #fff; }
+        .small-modal { max-width: 280px; }
+
+        /* === СТРАНИЦЫ === */
+        .page { display: none; }
+        .page.active { display: block; }
+        .page-title { font-size: 22px; font-weight: 700; text-align: center; padding: 16px; }
+        .empty-state { text-align: center; color: var(--text-gray); padding: 60px 20px; }
+
+        /* === РУЛЕТКА КОНТЕЙНЕРА === */
+        .box-modal-content {
+            padding: 20px 10px;
+        }
+        .box-phone-preview {
+            font-size: 22px;
+            font-weight: 700;
+            padding: 20px;
+            background: #383838;
+            border-radius: 12px;
+            margin: 16px 0;
+        }
+        .box-rarity-text { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .skip-btn {
+            background: #444;
+            border: none;
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 6px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        /* === СИМ-КАРТЫ И ТЕЛЕФОНЫ === */
+        .devices-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 16px;
+        }
+        .device-card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .device-card.selected { border-color: var(--legendary); }
+        .device-icon { font-size: 36px; margin-bottom: 8px; }
+        .device-name { font-size: 14px; font-weight: 500; }
+
+        /* === РЕФЕРАЛКА === */
+        .ref-box {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 16px;
+        }
+        .ref-desc { color: var(--text-gray); font-size: 14px; line-height: 1.5; margin-bottom: 12px; }
+        .ref-link-wrap {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            word-break: break-all;
+            font-size: 12px;
+            color: var(--text-gray);
+        }
+        .copy-ref-btn {
+            background: var(--green);
+            border: none;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- БОКОВОЕ МЕНЮ -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-close" onclick="closeSidebar()">&times;</div>
+        <div class="sidebar-item" onclick="switchPage('rollPage'); closeSidebar();">
+            <span class="sidebar-icon">🎰</span>
+            <span>Рулетка</span>
+        </div>
+        <div class="sidebar-item" onclick="switchPage('phonesPage'); closeSidebar();">
+            <span class="sidebar-icon">📱</span>
+            <span>Телефоны & SIM</span>
+        </div>
+        <div class="sidebar-item" onclick="switchPage('containersPage'); closeSidebar();">
+            <span class="sidebar-icon">📦</span>
+            <span>Контейнеры</span>
+        </div>
+        <div class="sidebar-item" onclick="switchPage('wheelPage'); closeSidebar();">
+            <span class="sidebar-icon">🎡</span>
+            <span>Колесо фортуны</span>
+        </div>
+        <div class="sidebar-item" onclick="switchPage('refPage'); closeSidebar();">
+            <span class="sidebar-icon">👥</span>
+            <span>Друзья</span>
+        </div>
+        <div class="sidebar-item" onclick="openDailyBonus(); closeSidebar();">
+            <span class="sidebar-icon">🎁</span>
+            <span>Ежедневный приз</span>
+        </div>
+    </div>
+
+    <!-- ВЕРХНЯЯ ЧАСТЬ -->
+    <div class="menu-header">
+        <button class="menu-btn" onclick="openSidebar()">☰</button>
+        <div class="level-container">
+            <div class="clover-circle">
+                <div class="clover-bg"></div>
+                <div class="clover-fill" id="cloverFill"></div>
+                <span class="clover-icon">🍀</span>
+            </div>
+            <div class="level-text">
+                <div>Уровень <span class="level-num" id="levelNum">1</span></div>
+                <div style="font-size:11px; color:var(--text-gray)">Опыт <span id="xpText">0</span>/<span id="xpMax">100</span></div>
+            </div>
+        </div>
+        <div class="balance-top">
+            <div style="font-size:11px; color:var(--text-gray)">Баланс</div>
+            <div class="balance-val" id="balance">1 000 ₽</div>
+        </div>
+    </div>
+
+    <!-- ВЫБОР СТРАНЫ -->
+    <div class="country-selector" onclick="openCountryModal()">
+        <span id="currentCountryName">🇷🇺 Россия</span>
+        <span style="color:var(--text-gray)">▼</span>
+    </div>
+
+    <!-- СТРАНИЦА РУЛЕТКИ -->
+    <div id="rollPage" class="page active">
+        <!-- ПОЛОСКА РЕДКОСТИ -->
+        <div class="rarity-bar-container">
+            <div>
+                <div class="rarity-name" id="rarityName">—</div>
+                <div class="rarity-steps">
+                    <div class="rarity-step" id="step1"></div>
+                    <div class="rarity-step" id="step2"></div>
+                    <div class="rarity-step" id="step3"></div>
+                    <div class="rarity-step" id="step4"></div>
+                    <div class="rarity-step" id="step5"></div>
+                </div>
+            </div>
+            <div class="rarity-price" id="rarityPrice">— ₽</div>
+        </div>
+
+        <!-- ДИСПЛЕЙ НОМЕРА -->
+        <div class="phone-display-wrap">
+            <div class="phone-display">
+                <span class="phone-prefix" id="phonePrefix">+7 </span>
+                <span class="phone-suffix" id="phoneNumber">XXX XXX XX XX</span>
+            </div>
+            <div class="location-text" id="locationText">📍 Россия</div>
+            <div class="bot-comment" id="botComment">Нажми «Крутить», чтобы получить номер</div>
+        </div>
+
+        <button class="roll-btn" id="rollButton" onclick="spinNumber()">🎰 КРУТИТЬ</button>
+    </div>
+
+    <!-- СТРАНИЦА МОИХ НОМЕРОВ -->
+    <div id="garagePage" class="page">
+        <h2 class="page-title">📱 Мои номера</h2>
+        <div class="numbers-list" id="numbersList">
+            <div class="empty-state">Здесь будут твои номера</div>
+        </div>
+    </div>
+
+    <!-- СТРАНИЦА КОНТЕЙНЕРОВ -->
+    <div id="containersPage" class="page">
+        <h2 class="page-title">📦 Контейнеры</h2>
+        <div class="containers-grid">
+            <div class="container-card" onclick="openContainer('обычный')">
+                <div class="container-icon" style="color:var(--common)">📦</div>
+                <div class="container-name uncommon">Обычный</div>
+                <div class="container-price">10 000 ₽</div>
+                <div class="container-bonus uncommon">Легендарка +0,4%</div>
+            </div>
+            <div class="container-card" onclick="openContainer('редкий')">
+                <div class="container-icon" style="color:var(--rare)">📦</div>
+                <div class="container-name rare">Редкий</div>
+                <div class="container-price">30 000 ₽</div>
+                <div class="container-bonus rare">Легендарка +2%</div>
+            </div>
+            <div class="container-card" onclick="openContainer('эпический')">
+                <div class="container-icon" style="color:var(--epic)">📦</div>
+                <div class="container-name epic">Эпический</div>
+                <div class="container-price">100 000 ₽</div>
+                <div class="container-bonus epic">Легендарка +12%</div>
+            </div>
+            <div class="container-card" onclick="openContainer('мифический')">
+                <div class="container-icon" style="color:var(--mythic)">📦</div>
+                <div class="container-name mythic">Мифический</div>
+                <div class="container-price">300 000 ₽</div>
+                <div class="container-bonus mythic">Легендарка +25%</div>
+            </div>
+            <div class="container-card" onclick="openContainer('легендарный')">
+                <div class="container-icon" style="color:var(--legendary)">📦</div>
+                <div class="container-name legendary">Легендарный</div>
+                <div class="container-price">1 000 000 ₽</div>
+                <div class="container-bonus legendary">Легендарка +40%</div>
+            </div>
+            <div class="container-card" onclick="openContainer('ультра')">
+                <div class="container-icon" style="background:linear-gradient(90deg,var(--rare),var(--epic),var(--mythic),var(--legendary));-webkit-background-clip:text;-webkit-text-fill-color:text">⭐</div>
+                <div class="container-name" style="background:linear-gradient(90deg,var(--rare),var(--epic),var(--mythic),var(--legendary));-webkit-background-clip:text;-webkit-text-fill-color:transparent">Ультра</div>
+                <div class="container-price">20 ⭐ Звёзд</div>
+                <div class="container-bonus legendary">Гарантия мифик+</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- СТРАНИЦА ТЕЛЕФОНОВ И SIM -->
+    <div id="phonesPage" class="page">
+        <h2 class="page-title">📱 Телефоны & SIM-карты</h2>
+        <h3 style="padding:0 16px 8px; font-size:15px; color:var(--text-gray)">SIM-карты</h3>
+        <div class="devices-grid" id="simsGrid">
+            <div class="device-card selected" onclick="selectSim(this)">
+                <div class="device-icon">🇷🇺</div>
+                <div class="device-name">Россия</div>
+            </div>
+        </div>
+        <h3 style="padding:16px 16px 8px; font-size:15px; color:var(--text-gray)">Телефоны</h3>
+        <div class="devices-grid" id="phonesGrid">
+            <div class="device-card selected" onclick="selectPhone(this)">
+                <div class="device-icon">📱</div>
+                <div class="device-name">Стандарт</div>
+            </div>
+            <div class="device-card" onclick="selectPhone(this)">
+                <div class="device-icon">📲</div>
+                <div class="device-name">Смартфон</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- СТРАНИЦА КОЛЕСА ФОРТУНЫ -->
+    <div id="wheelPage" class="page">
+        <h2 class="page-title">🎡 Колесо Фортуны</h2>
+        <div style="text-align:center; padding:40px 20px;">
+            <div style="font-size:80px; margin-bottom:20px;">🎡</div>
+            <p style="color:var(--text-gray); margin-bottom:20px">Крути колесо и получай бонусы!</p>
+            <button class="roll-btn" style="max-width:280px; margin:0" onclick="spinWheelFortune()">🎡 КРУТИТЬ</button>
+        </div>
+    </div>
+
+    <!-- СТРАНИЦА РЕФЕРАЛОВ -->
+    <div id="refPage" class="page">
+        <h2 class="page-title">👥 Пригласи друзей</h2>
+        <div class="ref-box">
+            <div class="ref-desc">🎁 <strong>Пригласи 5 друзей</strong> и получи <span style="color:var(--mythic)">Мифический номер</span> совершенно бесплатно!</div>
+            <div class="ref-link-wrap">
+                <span id="refLink">Загрузка...</span>
+                <button class="copy-ref-btn" onclick="copyRefLink()">📋</button>
+            </div>
+            <div style="display:flex; justify-content:space-around; margin-top:20px; text-align:center;">
+                <div>
+                    <div style="font-size:28px; font-weight:700; color:var(--legendary)" id="refCount">0</div>
+                    <div style="font-size:12px; color:var(--text-gray)">Друзей</div>
+                </div>
+                <div>
+                    <div style="font-size:28px; font-weight:700; color:var(--mythic)" id="refRewardProgress">0/5</div>
+                    <div style="font-size:12px; color:var(--text-gray)">До награды</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+    <div class="bottom-nav">
+        <button class="nav-item active" data-page="rollPage">
+            <span class="nav-icon">🎰</span>
+            <span>Игра</span>
+        </button>
+        <button class="nav-item" data-page="garagePage">
+            <span class="nav-icon">📋</span>
+            <span>Номера</span>
+        </button>
+        <button class="nav-item" data-page="containersPage">
+            <span class="nav-icon">📦</span>
+            <span>Контейнеры</span>
+        </button>
+        <button class="nav-item" data-page="refPage">
+            <span class="nav-icon">👥</span>
+            <span>Друзья</span>
+        </button>
+    </div>
+
+    <!-- МОДАЛКИ -->
+    <div class="modal-overlay" id="countryModal">
+        <div class="modal country-list-modal">
+            <h3 class="modal-title">🌍 Выбери страну</h3>
+            <div id="countryOptionsList"></div>
+            <button class="modal-btn secondary" onclick="closeModal('countryModal')">Закрыть</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="dailyBonusModal">
+        <div class="modal small-modal">
+            <h3 class="modal-title">🎁 Ежедневный приз</h3>
+            <p class="modal-text" id="dailyBonusText">Заходи каждый день и получай бонусы!</p>
+            <button class="modal-btn primary" onclick="claimDailyBonus()">Забрать приз</button>
+            <button class="modal-btn secondary" onclick="closeModal('dailyBonusModal')">Закрыть</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="containerBoxModal">
+        <div class="modal box-modal-content">
+            <h3 class="modal-title" id="boxTitle">Открытие контейнера...</h3>
+            <div class="box-phone-preview" id="boxPhonePreview">—</div>
+            <div class="box-rarity-text" id="boxRarityText">—</div>
+            <button class="modal-btn primary" onclick="closeModal('containerBoxModal')">Забрать</button>
+            <button class="skip-btn" onclick="closeModal('containerBoxModal')">Пропустить</button>
+        </div>
+    </div>
+
+<script>
+// === ДАННЫЕ ПРИЛОЖЕНИЯ ===
+const COUNTRIES = [
+    { id: 'ru', name: 'Россия', flag: '🇷🇺', code: '+7', cities: ['Москва', 'Санкт-Петербург', 'Казань', 'Новосибирск', 'Екатеринбург'] },
+    { id: 'kz', name: 'Казахстан', flag: '🇰🇿', code: '+7', cities: ['Астана', 'Алматы', 'Шымкент'] },
+    { id: 'by', name: 'Беларусь', flag: '🇧🇾', code: '+375', cities: ['Минск', 'Гомель', 'Брест'] },
+    { id: 'am', name: 'Армения', flag: '🇦🇲', code: '+374', cities: ['Ереван', 'Гюмри'] },
+    { id: 'kg', name: 'Киргизия', flag: '🇰🇬', code: '+996', cities: ['Бишкек', 'Ош'] }
+];
+
+const RARITY = {
+    обычный: { name: 'Обычный', color: 'var(--common)', chance: 45, priceRange: [100, 500] },
+    редкий: { name: 'Редкий', color: 'var(--rare)', chance: 30, priceRange: [1000, 5000] },
+    эпический: { name: 'Эпический', color: 'var(--epic)', chance: 10, priceRange: [15000, 50000] },
+    мифический: { name: 'Мифический', color: 'var(--mythic)', chance: 10, priceRange: [100000, 500000] },
+    легендарный: { name: 'Легендарный', color: 'var(--legendary)', chance: 5, priceRange: [1000000, 10000000] }
+};
+
+const BOT_COMMENTS = {
+    'зеркало': ['🔀 Зеркальный номер — симметрия всегда в цене!', '🔀 Симметрия делает номер легко запоминаемым!'],
+    'повтор': ['🔁 Повторяющиеся цифры — легко запомнить!', '🔁 Много одинаковых цифр — удобно и красиво!'],
+    'красивый': ['✨ Красивая последовательность — престижно!', '✨ Легко запоминающийся номер!'],
+    'особый': ['💎 Уникальная комбинация!', '💎 Редкая последовательность!'],
+    'стандарт': ['', '', '']
+};
+
+let userData = {
+    balance: 1000,
+    stars: 5,
+    level: 1,
+    xp: 0,
+    xpToNext: 100,
+    selectedCountry: 0,
+    numbers: [],
+    referrals: { count: 0, claimedDaily: null },
+    dailyBonusLast: null,
+    totalSpins: 0
+};
+
+let isSpinning = false;
+let userId = '';
+
+// === СОХРАНЕНИЕ И ЗАГРУЗКА ===
+function saveData() {
+    localStorage.setItem('nomerok_save', JSON.stringify(userData));
+}
+function loadData() {
+    const saved = localStorage.getItem('nomerok_save');
+    if (saved) userData = { ...userData, ...JSON.parse(saved) };
+    
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+        tg.ready();
+        userId = tg.initDataUnsafe?.user?.id || ('user_' + Math.random().toString(36).slice(2, 10));
+    } else {
+        userId = 'user_' + Math.random().toString(36).slice(2, 10);
+    }
+    
+    renderCountryOptions();
+    updateUI();
+    updateRefLink();
+}
+
+// === ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ===
+function updateUI() {
+    document.getElementById('balance').textContent = formatMoney(userData.balance);
+    document.getElementById('levelNum').textContent = userData.level;
+    document.getElementById('xpText').textContent = userData.xp;
+    document.getElementById('xpMax').textContent = userData.xpToNext;
+    
+    const xpPercent = Math.min((userData.xp / userData.xpToNext) * 360, 360);
+    document.getElementById('cloverFill').style.setProperty('--deg', `${xpPercent}deg`);
+    
+    const country = COUNTRIES[userData.selectedCountry];
+    document.getElementById('currentCountryName').innerHTML = `${country.flag} ${country.name}`;
+    
+    document.getElementById('refCount').textContent = userData.referrals.count;
+    document.getElementById('refRewardProgress').textContent = `${Math.min(userData.referrals.count, 5)}/5`;
+    
+    renderNumbers();
+}
+
+function formatMoney(n) {
+    return n.toLocaleString('ru-RU') + ' ₽';
+}
+
+// === МЕНЮ ===
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('show');
+    document.getElementById('sidebarOverlay').classList.add('show');
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('show');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+}
+
+// === СТРАНИЦЫ ===
+function switchPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+    document.querySelector(`[data-page="${pageId}"]`)?.classList.add('active');
+}
+document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => switchPage(btn.dataset.page));
+});
+
+// === МОДАЛКИ ===
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// === СТРАНЫ ===
+function renderCountryOptions() {
+    const list = document.getElementById('countryOptionsList');
+    list.innerHTML = COUNTRIES.map((c, i) => `
+        <div class="country-option" onclick="selectCountry(${i})">
+            <span class="country-flag">${c.flag}</span>
+            <span>${c.name} (${c.code})</span>
+        </div>
+    `).join('');
+}
+function openCountryModal() { openModal('countryModal'); }
+function selectCountry(i) {
+    userData.selectedCountry = i;
+    saveData();
+    updateUI();
+    closeModal('countryModal');
+}
+
+// === ЕЖЕДНЕВНЫЙ ПРИЗ ===
+function openDailyBonus() {
+    const today = new Date().toDateString();
+    if (userData.dailyBonusLast === today) {
+        document.getElementById('dailyBonusText').textContent = 'Ты уже забрал приз сегодня! Приходи завтра 😊';
+        document.querySelector('#dailyBonusModal .modal-btn.primary').style.display = 'none';
+    } else {
+        document.getElementById('dailyBonusText').innerHTML = '🎁 +500 ₽ на баланс!<br>🎁 +10 опыта!';
+        document.querySelector('#dailyBonusModal .modal-btn.primary').style.display = 'block';
+    }
+    openModal('dailyBonusModal');
+}
+function claimDailyBonus() {
+    const today = new Date().toDateString();
+    if (userData.dailyBonusLast === today) return;
+    userData.dailyBonusLast = today;
+    userData.balance += 500;
+    addXp(10);
+    saveData();
+    updateUI();
+    alert('✅ Получено: +500 ₽, +10 опыта!');
+    closeModal('dailyBonusModal');
+}
+
+// === ОПЫТ И УРОВНИ ===
+function addXp(amount) {
+    userData.xp += amount;
+    while (userData.xp >= userData.xpToNext) {
+        userData.xp -= userData.xpToNext;
+        userData.level++;
+        userData.xpToNext = Math.floor(userData.xpToNext * 1.5);
+        alert(`🎉 Поздравляем! Ты достиг уровня ${userData.level}!`);
+    }
+    saveData();
+    updateUI();
+}
+
+// === ГЕНЕРАЦИЯ НОМЕРА ===
+function generateNumber() {
+    const country = COUNTRIES[userData.selectedCountry];
+    let num = '';
+    for (let i = 0; i < 7; i++) num += Math.floor(Math.random() * 10);
+    
+    let isMirror = false, isRepeating = false, commentType = 'стандарт';
+    
+    if (num === num.split('').reverse().join('')) {
+        isMirror = true;
+        commentType = 'зеркало';
+    }
+    if (/^(\d)\1+$/.test(num)) {
+        isRepeating = true;
+        commentType = 'повтор';
+    }
+    if (!isMirror && !isRepeating && (num[0] === num[1] || num[3] === num[4])) {
+        commentType = 'красивый';
+    }
+    if (num === '9999999' || num === '7777777') {
+        commentType = 'особый';
+    }
+    
+    return {
+        full: `${country.code} ${num.slice(0,3)}-${num.slice(3,5)}-${num.slice(5,7)}`,
+        suffix: num,
+        commentType,
+        city: country.cities[Math.floor(Math.random() * country.cities.length)]
+    };
+}
+
+function getRarityType() {
+    const roll = Math.random() * 100;
+    if (roll < 5) return 'легендарный';
+    if (roll < 15) return 'мифический';
+    if (roll < 35) return 'эпический';
+    if (roll < 65) return 'редкий';
+    return 'обычный';
+}
+
+function getPrice(rarity) {
+    const range = RARITY[rarity].priceRange;
+    return Math.floor(Math.random() * (range[1] - range[0]) + range[0]);
+}
+
+// === КРУТИЛКА ===
+function spinNumber() {
+    if (isSpinning) return;
+    isSpinning = true;
+    const btn = document.getElementById('rollButton');
+    btn.disabled = true;
+    btn.textContent = '⏳ КРУТИМ...';
+    
+    const phoneSuffix = document.getElementById('phoneNumber');
+    phoneSuffix.classList.add('rolling');
+    
+    let rolls = 0;
+    const animInterval = setInterval(() => {
+        let t = '';
+        for (let i = 0; i < 7; i++) t += Math.floor(Math.random() * 10);
+        phoneSuffix.textContent = t;
+        rolls++;
+    }, 80);
+    
+    setTimeout(() => {
+        clearInterval(animInterval);
+        phoneSuffix.classList.remove('rolling');
+        
+        const numData = generateNumber();
+        const rarity = getRarityType();
+        const price = getPrice(rarity);
+        const country = COUNTRIES[userData.selectedCountry];
+        
+        phoneSuffix.textContent = numData.suffix.slice(0,3) + '-' + numData.suffix.slice(3,5) + '-' + numData.suffix.slice(5,7);
+        document.getElementById('locationText').textContent = `📍 ${numData.city}, ${country.name}`;
+        
+        const rarityInfo = RARITY[rarity];
+        document.getElementById('rarityName').textContent = rarityInfo.name;
+        document.getElementById('rarityName').style.color = rarityInfo.color;
+        document.getElementById('rarityPrice').textContent = formatMoney(price);
+        document.getElementById('rarityPrice').style.color = rarityInfo.color;
+        
+        const stepMap = { обычный:1, редкий:2, эпический:3, мифический:4, легендарный:5 };
+        for (let i = 1; i <=5; i++) {
+            const el = document.getElementById(`step${i}`);
+            el.className = 'rarity-step';
+            if (i <= stepMap[rarity]) el.classList.add(`active-${rarity}`);
+        }
+        
+        const comments = BOT_COMMENTS[numData.commentType];
+        document.getElementById('botComment').textContent = comments[Math.floor(Math.random() * comments.length)];
+        
+        userData.balance += price;
+        addXp(5);
+        userData.totalSpins++;
+        
+        if (rarity !== 'обычный' && rarity !== 'редкий') {
+            userData.numbers.unshift({
+                id: Date.now(),
+                phone: numData.full,
+                rarity: rarityInfo.name,
+                rarityKey: rarity,
+                price: price,
+                city: numData.city
+            });
+        }
+        
+        saveData();
+        updateUI();
+        
+        isSpinning = false;
+        btn.disabled = false;
+        btn.textContent = '🎰 КРУТИТЬ';
+    }, 1500);
+}
+
+// === МОИ НОМЕРА ===
+function renderNumbers() {
+    const list = document.getElementById('numbersList');
+    if (!userData.numbers.length) {
+        list.innerHTML = '<div class="empty-state">Здесь будут твои номера</div>';
+        return;
+    }
+    list.innerHTML = userData.numbers.map((item, i) => `
+        <div class="number-item">
+            <div class="number-top">
+                <span class="number-str">${item.phone}</span>
+                <span class="number-price" style="color:${RARITY[item.rarityKey].color}">${formatMoney(item.price)}</span>
+            </div>
+            <div style="font-size:12px; color:var(--text-gray)">${item.rarity} · ${item.city}</div>
+            <div class="number-buttons">
+                <button class="num-btn sell-btn" onclick="sellNumber(${i})">💸 Продать</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function sellNumber(i) {
+    userData.balance += userData.numbers[i].price;
+    userData.numbers.splice(i, 1);
+    saveData();
+    updateUI();
+    alert('✅ Продано!');
+}
+
+// === РЕФЕРАЛКА ===
+function updateRefLink() {
+    const baseUrl = window.location.href.split('?')[0];
+    document.getElementById('refLink').textContent = `${baseUrl}?ref=${userId}`;
+}
+function copyRefLink() {
+    const link = document.getElementById('refLink').textContent;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(link).then(() => {
+            alert('✅ Ссылка скопирована! Отправь друзьям!');
+        });
+    }
+}
+
+// === КОЛЕСО ФОРТУНЫ ===
+function spinWheelFortune() {
+    alert('🎡 Колесо фортуны — скоро будет доступно! Следи за обновлениями! 😊');
+}
+
+// === КОНТЕЙНЕРЫ ===
+function openContainer(type) {
+    alert('📦 Открытие контейнеров — скоро будет доступно! 😊');
+}
+
+// === ВЫБОР SIM И ТЕЛЕФОНА ===
+function selectSim(card) {
+    document.querySelectorAll('#simsGrid .device-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+}
+function selectPhone(card) {
+    document.querySelectorAll('#phonesGrid .device-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+}
+
+// === ЗАГРУЗКА ДАННЫХ ===
+loadData();
+</script>
+</body>
+</html>
