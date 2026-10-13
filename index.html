@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Номерок</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; overflow:hidden; }
+body {
+  background:#000; color:#fff;
+  font-family:-apple-system,'Segoe UI',Roboto,sans-serif;
+  user-select:none; position:relative;
+}
+#snow { position:fixed; inset:0; pointer-events:none; z-index:1; overflow:hidden; }
+.snowflake {
+  position:absolute; background:#fff; border-radius:50%;
+  opacity:.55; animation:fall linear infinite;
+}
+@keyframes fall {
+  0% { transform:translateY(-20px) translateX(0); opacity:0; }
+  10% { opacity:.6; }
+  90% { opacity:.6; }
+  100% { transform:translateY(105vh) translateX(30px); opacity:0; }
+}
+
+.top-bar {
+  position:fixed; top:0; left:0; right:0; z-index:10;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 16px; gap:10px;
+  background:linear-gradient(180deg,rgba(0,0,0,.95),transparent);
+}
+.menu-btn {
+  width:42px; height:42px; border-radius:12px;
+  background:rgba(255,255,255,.08); border:none;
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  gap:4px; cursor:pointer; transition:background .2s; flex-shrink:0;
+}
+.menu-btn:active { background:rgba(255,255,255,.18); }
+.menu-btn span { width:18px; height:2px; background:#fff; border-radius:2px; }
+
+.level-wrap { flex:1; display:flex; justify-content:center; }
+.level-circle { width:46px; height:46px; position:relative; }
+.level-circle svg { transform:rotate(-90deg); display:block; }
+.level-circle .bg { stroke:rgba(255,255,255,.1); }
+.level-circle .fg { stroke:#2ecc71; stroke-linecap:round; transition:stroke-dashoffset .5s; }
+.level-num {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:800;
+}
+.balance-box { text-align:right; flex-shrink:0; }
+.balance-label { font-size:10px; color:#888; text-transform:uppercase; letter-spacing:1px; }
+.balance-val { font-size:18px; font-weight:800; color:#ffd700; }
+
+.main {
+  position:relative; z-index:5; height:100vh;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:80px 20px 120px; gap:16px;
+}
+.reel-container {
+  width:100%; max-width:380px;
+  background:rgba(18,18,24,.9); border-radius:22px; padding:26px;
+  border:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(10px); text-align:center;
+  min-height:190px; display:flex; flex-direction:column; justify-content:center;
+  transition:box-shadow .3s;
+}
+.reel-rarity {
+  font-size:13px; font-weight:800; margin-bottom:14px;
+  text-transform:uppercase; letter-spacing:3px; transition:color .3s;
+}
+.reel-number {
+  font-size:32px; font-weight:900; letter-spacing:1.5px;
+  margin-bottom:10px; font-variant-numeric:tabular-nums; word-break:break-word;
+}
+.reel-region { font-size:13px; color:#888; margin-bottom:10px; }
+.reel-comment {
+  font-size:12px; color:#b0b0b0; font-style:italic;
+  min-height:16px; line-height:1.5;
+}
+.spin-btn {
+  width:100%; max-width:380px; padding:20px; border:none; border-radius:20px;
+  font-size:19px; font-weight:900; color:#000; cursor:pointer; letter-spacing:2px;
+  background:linear-gradient(90deg,#ff0080,#ff8c00,#ffd700,#00ff88,#00bfff,#8a2be2,#ff0080);
+  background-size:300% 100%;
+  animation:rainbow 3s linear infinite;
+  box-shadow:0 0 35px rgba(255,0,128,.45);
+  transition:transform .1s;
+}
+.spin-btn:active { transform:scale(.97); }
+.spin-btn:disabled { opacity:.5; animation-play-state:paused; }
+@keyframes rainbow {
+  0% { background-position:0% 50%; }
+  100% { background-position:300% 50%; }
+}
+.snackbar {
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(120px);
+  background:rgba(30,30,38,.98); padding:12px 22px; border-radius:14px;
+  font-size:13px; border:1px solid rgba(255,255,255,.12);
+  transition:transform .3s; z-index:50; max-width:90%; text-align:center;
+}
+.snackbar.show { transform:translateX(-50%) translateY(0); }
+
+.toast {
+  position:fixed; top:90px; left:50%; transform:translateX(-50%) translateY(-20px);
+  background:rgba(30,30,40,.98); padding:14px 22px; border-radius:14px;
+  font-size:14px; z-index:300; opacity:0; transition:all .3s;
+  border:1px solid rgba(255,255,255,.12); max-width:90%; text-align:center;
+  pointer-events:none;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+.overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:100;
+  display:none; flex-direction:column; padding:20px; overflow-y:auto;
+}
+.overlay.show { display:flex; }
+.overlay-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:24px; padding-top:10px;
+}
+.overlay-title { font-size:22px; font-weight:800; }
+.close-btn {
+  width:40px; height:40px; border-radius:50%;
+  background:rgba(255,255,255,.08); border:none; color:#fff;
+  font-size:22px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+
+.profile-card {
+  background:rgba(25,25,32,.95); border-radius:20px; padding:20px;
+  margin-bottom:16px; display:flex; align-items:center; gap:16px;
+  border:1px solid rgba(255,255,255,.06);
+}
+.profile-info { flex:1; }
+.profile-level { font-size:19px; font-weight:800; }
+.profile-exp { font-size:12px; color:#888; margin-top:3px; }
+.profile-balance { text-align:right; }
+.profile-balance .lbl { font-size:10px; color:#888; text-transform:uppercase; letter-spacing:1px; }
+.profile-balance .val { font-size:17px; font-weight:800; color:#ffd700; margin-top:2px; }
+.search-box {
+  background:rgba(30,30,38,.9); border-radius:14px; padding:14px 18px;
+  color:#666; font-size:14px; margin-bottom:16px;
+  border:1px solid rgba(255,255,255,.05);
+}
+
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.grid-item {
+  background:rgba(25,25,32,.95); border-radius:18px; padding:20px 12px;
+  display:flex; flex-direction:column; align-items:center; gap:12px;
+  cursor:pointer; border:1px solid rgba(255,255,255,.05);
+  transition:transform .1s, background .2s; position:relative;
+}
+.grid-item:active { transform:scale(.96); background:rgba(40,40,50,.95); }
+.grid-icon {
+  width:56px; height:56px; border-radius:16px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:26px;
+}
+.grid-label { font-size:14px; font-weight:700; }
+.badge {
+  position:absolute; top:12px; right:12px;
+  min-width:20px; height:20px; border-radius:10px;
+  background:#ff3b5c; color:#fff; font-size:11px; font-weight:800;
+  display:flex; align-items:center; justify-content:center; padding:0 6px;
+}
+.badge.dot { min-width:10px; height:10px; padding:0; }
+
+.case-view { display:flex; flex-direction:column; align-items:center; }
+.case-title { font-size:20px; font-weight:800; margin-bottom:6px; }
+.case-sub { font-size:13px; color:#888; margin-bottom:10px; }
+.case-strip-wrap {
+  width:100%; overflow:hidden; position:relative;
+  margin:20px 0; padding:10px 0; -webkit-mask-image:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent); mask-image:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent);
+}
+.case-strip { display:flex; gap:12px; transition:transform 4s cubic-bezier(.15,.9,.2,1); }
+.case-item {
+  min-width:130px; height:150px; border-radius:16px;
+  background:rgba(30,30,38,.95); border:1px solid rgba(255,255,255,.08);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:10px; padding:12px; flex-shrink:0;
+}
+.case-item .phone-icon { font-size:44px; }
+.case-item .phone-name { font-size:11px; font-weight:700; text-align:center; color:#ccc; }
+.case-pointer {
+  position:absolute; top:0; bottom:0; left:50%; width:3px;
+  background:#ffd700; transform:translateX(-50%); z-index:3;
+  box-shadow:0 0 15px #ffd700;
+}
+.case-pointer::before, .case-pointer::after {
+  content:''; position:absolute; left:50%; transform:translateX(-50%);
+  width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent;
+}
+.case-pointer::before { top:-4px; border-top:10px solid #ffd700; }
+.case-pointer::after { bottom:-4px; border-bottom:10px solid #ffd700; }
+
+.boxes-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:6px; }
+.box-card {
+  background:rgba(25,25,32,.95); border-radius:18px; padding:18px 10px;
+  text-align:center; cursor:pointer; border:1px solid rgba(255,255,255,.06);
+  transition:transform .1s; position:relative;
+}
+.box-card:active { transform:scale(.96); }
+.box-emoji { font-size:44px; margin-bottom:8px; }
+.box-name { font-size:13px; font-weight:800; margin-bottom:6px; }
+.box-price { font-size:15px; font-weight:800; margin-bottom:4px; }
+.box-chance { font-size:10px; color:#888; }
+
+.country-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
+.country-btn {
+  background:rgba(25,25,32,.95); border-radius:14px; padding:14px 12px;
+  display:flex; align-items:center; gap:10px; cursor:pointer;
+  border:1px solid rgba(255,255,255,.06); font-size:13px; font-weight:700;
+  color:#fff; transition:all .15s;
+}
+.country-btn:active { transform:scale(.96); }
+.country-btn.active { background:rgba(60,60,72,.98); border-color:#ffd700; }
+.country-flag { font-size:22px; }
+
+.wheel-wrap { display:flex; flex-direction:column; align-items:center; gap:24px; margin-top:20px; }
+.wheel-outer { position:relative; width:290px; height:290px; }
+.wheel {
+  width:290px; height:290px; border-radius:50%;
+  position:relative; transition:transform 4.5s cubic-bezier(.15,.9,.2,1);
+  box-shadow:0 0 40px rgba(255,215,0,.25);
+  background:conic-gradient(
+    #ff0080 0deg 45deg, #ff8c00 45deg 90deg,
+    #ffd700 90deg 135deg, #00ff88 135deg 180deg,
+    #00bfff 180deg 225deg, #8a2be2 225deg 270deg,
+    #ff3b5c 270deg 315deg, #2ecc71 315deg 360deg
+  );
+}
+.wheel-label {
+  position:absolute; top:50%; left:50%; transform-origin:0 0;
+  font-size:11px; font-weight:800; color:#000; pointer-events:none;
+}
+.wheel-center {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:70px; height:70px; border-radius:50%; background:#111;
+  border:3px solid #ffd700; display:flex; align-items:center; justify-content:center;
+  font-size:22px; z-index:4;
+}
+.wheel-pointer {
+  position:absolute; top:-14px; left:50%; transform:translateX(-50%);
+  width:0; height:0; border-left:16px solid transparent; border-right:16px solid transparent;
+  border-top:26px solid #ffd700; z-index:5; filter:drop-shadow(0 0 8px #ffd700);
+}
+
+.popup-btn {
+  width:100%; padding:16px; border:none; border-radius:14px;
+  font-size:16px; font-weight:800; cursor:pointer;
+  background:linear-gradient(90deg,#ff0080,#8a2be2);
+  color:#fff; transition:transform .1s;
+}
+.popup-btn:active { transform:scale(.97); }
+
+.popup {
+  position:fixed; bottom:0; left:0; right:0; z-index:200;
+  background:#1a1a20; border-radius:24px 24px 0 0; padding:24px;
+  transform:translateY(100%); transition:transform .3s;
+  max-height:80vh; overflow-y:auto;
+}
+.popup.show { transform:translateY(0); }
+.popup-handle {
+  width:40px; height:4px; background:rgba(255,255,255,.2);
+  border-radius:2px; margin:0 auto 20px;
+}
+.popup-title { font-size:20px; font-weight:800; margin-bottom:10px; }
+.popup-text { font-size:14px; color:#aaa; line-height:1.5; margin-bottom:20px; }
+
+.ref-link {
+  background:rgba(30,30,38,.9); border-radius:12px; padding:14px;
+  font-size:12px; word-break:break-all; color:#8a2be2;
+  margin-bottom:16px; border:1px dashed rgba(138,43,226,.4);
+}
+.empty { text-align:center; color:#666; padding:40px 0; font-size:14px; }
+</style>
+</head>
+<body>
+
+<div id="snow"></div>
+
+<div class="top-bar">
+  <button class="menu-btn" onclick="openMenu()">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="level-wrap">
+    <div class="level-circle">
+      <svg width="46" height="46">
+        <circle class="bg" cx="23" cy="23" r="19" fill="none" stroke-width="4"/>
+        <circle class="fg" id="lvlRing" cx="23" cy="23" r="19" fill="none" stroke-width="4"
+                stroke-dasharray="119.4" stroke-dashoffset="119.4"/>
+      </svg>
+      <div class="level-num" id="lvlNum">1</div>
+    </div>
+  </div>
+  <div class="balance-box">
+    <div class="balance-label">Баланс</div>
+    <div class="balance-val" id="balance">1 000 ₽</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="reel-container" id="reelContainer">
+    <div class="reel-rarity" id="reelRarity">Обычный</div>
+    <div class="reel-number" id="reelNumber">+7 (___) ___-__-__</div>
+    <div class="reel-region" id="reelRegion">🇷🇺 Россия</div>
+    <div class="reel-comment" id="reelComment"></div>
+  </div>
+  <button class="spin-btn" id="spinBtn" onclick="spin()">КРУТИТЬ</button>
+</div>
+
+<div class="snackbar" id="snackbar"></div>
+<div class="toast" id="toast"></div>
+
+<!-- Меню -->
+<div class="overlay" id="menuOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Ещё</div>
+    <button class="close-btn" onclick="closeOverlay('menuOverlay')">✕</button>
+  </div>
+  <div class="profile-card">
+    <div class="level-circle">
+      <svg width="52" height="52">
+        <circle class="bg" cx="26" cy="26" r="21" fill="none" stroke-width="5"/>
+        <circle class="fg" id="lvlRing2" cx="26" cy="26" r="21" fill="none" stroke-width="5"
+                stroke-dasharray="132" stroke-dashoffset="132"/>
+      </svg>
+      <div class="level-num" id="lvlNum2">1</div>
+    </div>
+    <div class="profile-info">
+      <div class="profile-level">Уровень <span id="lvlText">1</span></div>
+      <div class="profile-exp"><span id="expText">0 из 100</span> опыта</div>
+    </div>
+    <div class="profile-balance">
+      <div class="lbl">Баланс</div>
+      <div class="val" id="balance2">1 000 ₽</div>
+    </div>
+  </div>
+  <div class="search-box">🔍 Найти: телефон, магазин, рулетка...</div>
+  <div class="grid">
+    <div class="grid-item" onclick="openPhones()">
+      <div class="grid-icon" style="background:#2ecc71;">📱</div>
+      <div class="grid-label">Телефоны</div>
+      <div class="badge" id="phoneBadge">0</div>
+    </div>
+    <div class="grid-item" onclick="openShop()">
+      <div class="grid-icon" style="background:#ff3b5c;">🏪</div>
+      <div class="grid-label">Магазин</div>
+    </div>
+    <div class="grid-item" onclick="openWheel()">
+      <div class="grid-icon" style="background:#ff9500;">🎡</div>
+      <div class="grid-label">Колесо</div>
+    </div>
+    <div class="grid-item" onclick="openFriends()">
+      <div class="grid-icon" style="background:#00bfff;">👥</div>
+      <div class="grid-label">Друзья</div>
+    </div>
+    <div class="grid-item" onclick="openDaily()">
+      <div class="grid-icon" style="background:#ff2d55;">🎁</div>
+      <div class="grid-label">Подарок</div>
+      <div class="badge dot" id="dailyDot"></div>
+    </div>
+    <div class="grid-item" onclick="openCountries()">
+      <div class="grid-icon" style="background:#8a2be2;">🌍</div>
+      <div class="grid-label">Страны</div>
+    </div>
+  </div>
+</div>
+
+<!-- Магазин -->
+<div class="overlay" id="shopOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Магазин</div>
+    <button class="close-btn" onclick="closeOverlay('shopOverlay')">✕</button>
+  </div>
+  <div class="boxes-grid" id="boxesGrid"></div>
+</div>
+
+<!-- Рулетка коробки -->
+<div class="overlay" id="caseOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Открытие</div>
+    <button class="close-btn" onclick="closeOverlay('caseOverlay')">✕</button>
+  </div>
+  <div class="case-view">
+    <div class="case-title" id="caseTitle">Обычная коробка</div>
+    <div class="case-sub" id="caseSub">Нажми, чтобы открыть</div>
+    <div class="case-strip-wrap">
+      <div class="case-pointer"></div>
+      <div class="case-strip" id="caseStrip"></div>
+    </div>
+    <button class="popup-btn" id="caseOpenBtn" onclick="openCase()">Открыть</button>
+  </div>
+</div>
+
+<!-- Телефоны -->
+<div class="overlay" id="phonesOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Мои телефоны</div>
+    <button class="close-btn" onclick="closeOverlay('phonesOverlay')">✕</button>
+  </div>
+  <div class="grid" id="phonesGrid"></div>
+</div>
+
+<!-- Колесо -->
+<div class="overlay" id="wheelOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Колесо фортуны</div>
+    <button class="close-btn" onclick="closeOverlay('wheelOverlay')">✕</button>
+  </div>
+  <div class="wheel-wrap">
+    <div class="wheel-outer">
+      <div class="wheel-pointer"></div>
+      <div class="wheel" id="wheel"></div>
+      <div class="wheel-center">🎁</div>
+    </div>
+    <button class="popup-btn" onclick="spinWheel()" id="wheelBtn">Крутить бесплатно</button>
+  </div>
+</div>
+
+<!-- Друзья -->
+<div class="overlay" id="friendsOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Друзья</div>
+    <button class="close-btn" onclick="closeOverlay('friendsOverlay')">✕</button>
+  </div>
+  <div class="popup-text">Пригласи 5 друзей и получи <b style="color:#8a2be2;">Мифический номер</b> в подарок!</div>
+  <div class="ref-link" id="refLink">https://t.me/your_bot?start=ref</div>
+  <button class="popup-btn" onclick="copyRef()">Скопировать ссылку</button>
+  <div class="popup-text" style="margin-top:20px;">Приглашено: <b id="refCount">0</b> / 5</div>
+</div>
+
+<!-- Страны -->
+<div class="overlay" id="countriesOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Какие номера крутить</div>
+    <button class="close-btn" onclick="closeOverlay('countriesOverlay')">✕</button>
+  </div>
+  <div class="popup-text" style="margin-bottom:0;">У каждой страны свой кошелёк</div>
+  <div class="country-grid" id="countryGrid"></div>
+</div>
+
+<!-- Дейлик -->
+<div class="popup" id="dailyPopup">
+  <div class="popup-handle"></div>
+  <div class="popup-title">🎁 Ежедневный подарок</div>
+  <div class="popup-text" id="dailyText">Заходи каждый день и получай бонус! Чем больше дней подряд — тем больше награда.</div>
+  <button class="popup-btn" onclick="claimDaily()">Забрать</button>
+</div>
+
+<script>
+// ================= STATE =================
+const state = {
+  balance: 1000,
+  level: 1,
+  exp: 0,
+  expMax: 100,
+  country: 'ru',
+  spins: 0,
+  phones: [],
+  dailyStreak: 0,
+  lastDaily: 0,
+  refCount: 0,
+  lastSpin: 0,
+};
+
+function save() {
+  try { localStorage.setItem('nom_state', JSON.stringify(state)); } catch(e){}
+}
+function load() {
+  try {
+    const s = localStorage.getItem('nom_state');
+    if (s) Object.assign(state, JSON.parse(s));
+  } catch(e){}
+}
+load();
+
+// ================= COUNTRIES =================
+const COUNTRIES = {
+  ru: { name:'Россия', flag:'🇷🇺', code:'+7',   gen:()=>`+7 (${['9','8','7','6','5','4','3'][rnd(7)]}${digits(2)}) ${digits(3)}-${digits(2)}-${digits(2)}` },
+  by: { name:'Беларусь', flag:'🇧🇾', code:'+375', gen:()=>`+375 (${digits(2)}) ${digits(3)}-${digits(2)}-${digits(2)}` },
+  kz: { name:'Казахстан', flag:'🇰🇿', code:'+7', gen:()=>`+7 (7${digits(2)}) ${digits(3)}-${digits(2)}-${digits(2)}` },
+  ua: { name:'Украина', flag:'🇺🇦', code:'+380', gen:()=>`+380 (${digits(2)}) ${digits(3)}-${digits(2)}-${digits(2)}` },
+  ae: { name:'ОАЭ', flag:'🇦🇪', code:'+971', gen:()=>`+971 (${digits(2)}) ${digits(3)}-${digits(4)}` },
+  de: { name:'Германия', flag:'🇩🇪', code:'+49', gen:()=>`+49 (${digits(3)}) ${digits(7)}` },
+  am: { name:'Армения', flag:'🇦🇲', code:'+374', gen:()=>`+374 (${digits(2)}) ${digits(3)}-${digits(3)}` },
+  ge: { name:'Грузия', flag:'🇬🇪', code:'+995', gen:()=>`+995 (${digits(3)}) ${digits(3)}-${digits(3)}` },
+  az: { name:'Азербайджан', flag:'🇦🇿', code:'+994', gen:()=>`+994 (${digits(2)}) ${digits(3)}-${digits(2)}-${digits(2)}` },
+  uz: { name:'Узбекистан', flag:'🇺🇿', code:'+998', gen:()=>`+998 (${digits(2)}) ${digits(3)}-${digits(2)}-${digits(2)}` },
+  us: { name:'США', flag:'🇺🇸', code:'+1', gen:()=>`+1 (${digits(3)}) ${digits(3)}-${digits(4)}` },
+};
+
+// ================= RARITIES =================
+const RARITIES = [
+  { id:'common',    name:'Обычный',     color:'#888888', weight:55, mult:1 },
+  { id:'rare',      name:'Редкий',      color:'#3b82f6', weight:25, mult:3 },
+  { id:'epic',      name:'Эпический',   color:'#a855f7', weight:13, mult:10 },
+  { id:'mythic',    name:'Мифический',  color:'#ef4444', weight:5,  mult:30 },
+  { id:'legendary', name:'Легендарный', color:'#ffd700', weight:2,  mult:100 },
+];
+
+// ================= PHONES =================
+const PHONES = [
+  { name:'Nokia 3310',       icon:'📞', tier:'old',  rarity:'common',    price:500 },
+  { name:'Siemens A50',      icon:'📞', tier:'old',  rarity:'common',    price:700 },
+  { name:'Motorola C115',    icon:'📞', tier:'old',  rarity:'common',    price:900 },
+  { name:'Samsung SGH',      icon:'📞', tier:'old',  rarity:'rare',      price:2500 },
+  { name:'Sony Ericsson',    icon:'📞', tier:'old',  rarity:'rare',      price:3000 },
+  { name:'iPhone 4',         icon:'📱', tier:'mid',  rarity:'rare',      price:5000 },
+  { name:'iPhone 6',         icon:'📱', tier:'mid',  rarity:'epic',      price:12000 },
+  { name:'Samsung S8',       icon:'📱', tier:'mid',  rarity:'epic',      price:15000 },
+  { name:'iPhone X',         icon:'📱', tier:'new',  rarity:'epic',      price:25000 },
+  { name:'iPhone 14 Pro',    icon:'📱', tier:'new',  rarity:'mythic',    price:80000 },
+  { name:'Samsung S23 Ultra',icon:'📱', tier:'new',  rarity:'mythic',    price:90000 },
+  { name:'iPhone 15 Pro Max',icon:'📱', tier:'new',  rarity:'legendary', price:200000 },
+  { name:'Vertu Signature',  icon:'💎', tier:'lux',  rarity:'legendary', price:500000 },
+];
+
+// ================= BOXES =================
+const BOXES = [
+  { id:'common',    name:'Обычная',     emoji:'📦', price:10000,   color:'#888888', chances:{ common:.90, rare:.10 } },
+  { id:'rare',      name:'Редкая',      emoji:'📦', price:30000,   color:'#3b82f6', chances:{ common:.60, rare:.35, epic:.05 } },
+  { id:'epic',      name:'Эпическая',   emoji:'📦', price:100000,  color:'#a855f7', chances:{ common:.30, rare:.45, epic:.22, mythic:.03 } },
+  { id:'mythic',    name:'Мифическая',  emoji:'📦', price:300000,  color:'#ef4444', chances:{ rare:.40, epic:.40, mythic:.18, legendary:.02 } },
+  { id:'legendary', name:'Легендарная', emoji:'📦', price:1000000, color:'#ffd700', chances:{ epic:.40, mythic:.45, legendary:.15 } },
+];
+
+// ================= HELPERS =================
+function rnd(n){ return Math.floor(Math.random()*n); }
+function digits(n){ let s=''; for(let i=0;i<n;i++) s+=rnd(10); return s; }
+function fmt(num){
+  return Math.floor(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+}
+function pickRarity(){
+  const total = RARITIES.reduce((s,r)=>s+r.weight,0);
+  let r = Math.random()*total;
+  for (const rar of RARITIES){ r-=rar.weight; if(r<=0) return rar; }
+  return RARITIES[0];
+}
+function expForLevel(l){ return Math.floor(100 * Math.pow(l, 1.5)); }
+
+// ================= SNOW =================
+(function initSnow(){
+  const c = document.getElementById('snow');
+  const count = 60;
+  for (let i=0;i<count;i++){
+    const s = document.createElement('div');
+    s.className = 'snowflake';
+    const size = 1 + Math.random()*2.5;
+    s.style.width = size+'px';
+    s.style.height = size+'px';
+    s.style.left = Math.random()*100+'%';
+    s.style.animationDuration = (5 + Math.random()*8)+'s';
+    s.style.animationDelay = (-Math.random()*10)+'s';
+    s.style.opacity = 0.3 + Math.random()*0.4;
+    c.appendChild(s);
+  }
+})();
+
+// ================= UI UPDATE =================
+function updateUI(){
+  document.getElementById('balance').textContent = fmt(state.balance)+' ₽';
+  document.getElementById('balance2').textContent = fmt(state.balance)+' ₽';
+  document.getElementById('lvlNum').textContent = state.level;
+  document.getElementById('lvlNum2').textContent = state.level;
+  document.getElementById('lvlText').textContent = state.level;
+  document.getElementById('expText').textContent = state.exp+' из '+state.expMax;
+  const ratio = Math.min(state.exp/state.expMax,1);
+  const c1 = document.getElementById('lvlRing');
+  const c2 = document.getElementById('lvlRing2');
+  c1.style.strokeDashoffset = 119.4 * (1-ratio);
+  c2.style.strokeDashoffset = 132 * (1-ratio);
+  const badge = document.getElementById('phoneBadge');
+  if (state.phones.length>0){ badge.textContent = state.phones.length; badge.style.display='flex'; }
+  else badge.style.display='none';
+  document.getElementById('refCount').textContent = state.refCount;
+  // daily dot
+  const now = Date.now();
+  const canDaily = now - state.lastDaily > 20*60*60*1000;
+  document.getElementById('dailyDot').style.display = canDaily ? 'block' : 'none';
+}
+
+// ================= SPIN =================
+function spin(){
+  const btn = document.getElementById('spinBtn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = 'КРУТИМ...';
+  state.lastSpin = Date.now();
+
+  const rarity = pickRarity();
+  const country = COUNTRIES[state.country];
+  const number = country.gen();
+
+  // анимация прокрутки цифр
+  const el = document.getElementById('reelNumber');
+  let ticks = 0;
+  const maxTicks = 20;
+  const tickInterval = setInterval(()=>{
+    el.textContent = country.gen();
+    ticks++;
+    if (ticks >= maxTicks){
+      clearInterval(tickInterval);
+      finishSpin(rarity, country, number);
+    }
+  }, 60);
+}
+
+function finishSpin(rarity, country, number){
+  const el = document.getElementById('reelNumber');
+  el.textContent = number;
+
+  const comment = generateComment(number, rarity, country);
+  const baseReward = 30 + rnd(30);
+  const reward = Math.floor(baseReward * rarity.mult);
+  state.balance += reward;
+  state.spins++;
+
+  // опыт
+  const expGain = 2 + Math.floor(rarity.mult / 2);
+  state.exp += expGain;
+  while (state.exp >= state.expMax){
+    state.exp -= state.expMax;
+    state.level++;
+    state.expMax = expForLevel(state.level);
+  }
+
+  const rc = document.getElementById('reelContainer');
+  rc.style.boxShadow = '0 0 40px ' + rarity.color + '80';
+  setTimeout(()=>{ rc.style.boxShadow=''; }, 1000);
+
+  document.getElementById('reelRarity').textContent = rarity.name;
+  document.getElementById('reelRarity').style.color = rarity.color;
+  document.getElementById('reelRegion').textContent = country.flag + ' ' + country.name;
+  document.getElementById('reelComment').textContent = comment ? ('💬 ' + comment) : '';
+
+  save(); updateUI();
+  showSnack('+'+fmt(reward)+' ₽   •   +'+expGain+' опыта');
+
+  const btn = document.getElementById('spinBtn');
+  btn.disabled = false;
+  btn.textContent = 'КРУТИТЬ';
+}
+
+function generateComment(number, rarity, country){
+  const digitsOnly = number.replace(/\D/g,'');
+  const parts = [];
+  // повторяющиеся цифры
+  for (let d=0; d<=9; d++){
+    const re = new RegExp(d+'{4,}','g');
+    const m = digitsOnly.match(re);
+    if (m) parts.push('повтор '+d+' x'+m[0].length);
+  }
+  // красивые окончания
+  const tail = digitsOnly.slice(-3);
+  if (['777','888','999','000','111','222','333','444','555','666'].includes(tail)) parts.push('топовое окончание '+tail);
+  if (digitsOnly.slice(0,3) === digitsOnly.slice(0,1).repeat(3)) parts.push('ровное начало');
+  // зеркальные
+  if (digitsOnly === digitsOnly.split('').reverse().join('')) parts.push('зеркальный номер');
+  // редкость
+  if (rarity.id === 'legendary') parts.push('легендарная редкость');
+  else if (rarity.id === 'mythic') parts.push('мифическая редкость');
+
+  if (parts.length === 0) return '';
+  return parts.slice(0,3).join(' • ');
+}
+
+function showSnack(text){
+  const s = document.getElementById('snackbar');
+  s.textContent = text;
+  s.classList.add('show');
+  clearTimeout(s._t);
+  s._t = setTimeout(()=>s.classList.remove('show'), 2500);
+}
+function showToast(text, ms=2000){
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('show'), ms);
+}
+
+// ================= MENU =================
+function openMenu(){ document.getElementById('menuOverlay').classList.add('show'); }
+function closeOverlay(id){ document.getElementById(id).classList.remove('show'); }
+
+// ================= SHOP =================
+function openShop(){
+  const g = document.getElementById('boxesGrid');
+  g.innerHTML = '';
+  BOXES.forEach(b=>{
+    const canBuy = state.balance >= b.price;
+    const d = document.createElement('div');
+    d.className = 'box-card';
+    d.style.opacity = canBuy ? '1' : '0.5';
+    d.innerHTML = `
+      <div class="box-emoji">${b.emoji}</div>
+      <div class="box-name" style="color:${b.color}">${b.name} коробка</div>
+      <div class="box-price" style="color:${b.color}">${fmt(b.price)} ₽</div>
+      <div class="box-chance">${Object.entries(b.chances).map(([k,v])=>k+' '+(v*100).toFixed(0)+'%').join(' · ')}</div>
+    `;
+    d.onclick = ()=>{
+      if (state.balance < b.price){ showToast('Не хватает денег'); return; }
+      state.balance -= b.price;
+      save(); updateUI();
+      openCaseView(b);
+    };
+    g.appendChild(d);
+  });
+  closeOverlay('menuOverlay');
+  document.getElementById('shopOverlay').classList.add('show');
+}
+
+// ================= CASE =================
+let currentCase = null;
+let caseRolling = false;
+
+function openCaseView(box){
+  currentCase = box;
+  document.getElementById('caseTitle').textContent = box.name + ' коробка';
+  document.getElementById('caseSub').textContent = 'Нажми "Открыть" для прокрутки';
+  const btn = document.getElementById('caseOpenBtn');
+  btn.textContent = 'Открыть';
+  btn.disabled = false;
+  buildStrip(box);
+  closeOverlay('shopOverlay');
+  document.getElementById('caseOverlay').classList.add('show');
+}
+
+function buildStrip(box){
+  const strip = document.getElementById('caseStrip');
+  strip.style.transition = 'none';
+  strip.style.transform = 'translateX(0)';
+  strip.innerHTML = '';
+  const pool = PHONES.filter(p=>Object.keys(box.chances).includes(p.rarity));
+  const items = [];
+  for (let i=0;i<30;i++){
+    const p = pool[rnd(pool.length)];
+    items.push(p);
+    const d = document.createElement('div');
+    d.className = 'case-item';
+    d.innerHTML = `<div class="phone-icon">${p.icon}</div><div class="phone-name">${p.name}</div>`;
+    strip.appendChild(d);
+  }
+  currentCase._items = items;
+}
+
+function openCase(){
+  if (!currentCase || caseRolling) return;
+  caseRolling = true;
+  const btn = document.getElementById('caseOpenBtn');
+  btn.disabled = true;
+  btn.textContent = 'Крутим...';
+
+  const box = currentCase;
+  // выбираем приз
+  const r = Math.random();
+  let acc = 0, prizeRarity = null;
+  for (const [k,v] of Object.entries(box.chances)){
+    acc += v;
+    if (r <= acc){ prizeRarity = k; break; }
+  }
+  if (!prizeRarity) prizeRarity = Object.keys(box.chances)[0];
+
+  const pool = PHONES.filter(p=>p.rarity === prizeRarity);
+  const prize = pool[rnd(pool.length)];
+
+  // вставляем приз на 25-й позиции
+  const items = currentCase._items;
+  const winIndex = 24;
+  items[winIndex] = prize;
+
+  // перестраиваем strip с новым призом
+  const strip = document.getElementById('caseStrip');
+  strip.style.transition = 'none';
+  strip.style.transform = 'translateX(0)';
+  strip.innerHTML = '';
+  items.forEach(p=>{
+    const d = document.createElement('div');
+    d.className = 'case-item';
+    d.innerHTML = `<div class="phone-icon">${p.icon}</div><div class="phone-name">${p.name}</div>`;
+    strip.appendChild(d);
+  });
+
+  // прокрутка
+  const itemW = 130 + 12;
+  const centerOffset = strip.parentElement.clientWidth / 2 - 65;
+  const target = -(winIndex * itemW) + centerOffset + (Math.random()*40 - 20);
+
+  requestAnimationFrame(()=>{
+    strip.style.transition = 'transform 4s cubic-bezier(.15,.9,.2,1)';
+    strip.style.transform = `translateX(${target}px)`;
+  });
+
+  setTimeout(()=>{
+    caseRolling = false;
+    btn.disabled = false;
+    btn.textContent = 'Ещё раз';
+    // награда
+    state.phones.push(prize);
+    state.balance += Math.floor(prize.price * 0.3);
+    // опыт
+    state.exp += 10;
+    while (state.exp >= state.expMax){
+      state.exp -= state.expMax;
+      state.level++;
+      state.expMax = expForLevel(state.level);
+    }
+    save(); updateUI();
+    showToast('🎉 ' + prize.name + '! +' + fmt(Math.floor(prize.price*0.3)) + ' ₽', 3000);
+  }, 4200);
+}
+
+// ================= PHONES =================
+function openPhones(){
+  const g = document.getElementById('phonesGrid');
+  g.innerHTML = '';
+  if (state.phones.length === 0){
+    g.innerHTML = '<div class="empty" style="grid-column:1/-1;">Пока нет телефонов. Открывай коробки в магазине!</div>';
+  } else {
+    state.phones.forEach(p=>{
+      const rar = RARITIES.find(r=>r.id===p.rarity) || RARITIES[0];
+      const d = document.createElement('div');
+      d.className = 'grid-item';
+      d.innerHTML = `
+        <div class="grid-icon" style="background:${rar.color}22;font-size:32px;">${p.icon}</div>
+        <div class="grid-label" style="font-size:12px;">${p.name}</div>
+        <div style="font-size:11px;color:${rar.color};font-weight:800;">${fmt(p.price)} ₽</div>
+      `;
+      g.appendChild(d);
+    });
+  }
+  closeOverlay('menuOverlay');
+  document.getElementById('phonesOverlay').classList.add('show');
+}
+
+// ================= COUNTRIES =================
+function openCountries(){
+  const g = document.getElementById('countryGrid');
+  g.innerHTML = '';
+  Object.entries(COUNTRIES).forEach(([key,c])=>{
+    const d = document.createElement('div');
+    d.className = 'country-btn' + (state.country===key ? ' active' : '');
+    d.innerHTML = `<span class="country-flag">${c.flag}</span><span>${c.name}</span>`;
+    d.onclick = ()=>{
+      state.country = key;
+      save();
+      // обновим регion на главном
+      document.getElementById('reelRegion').textContent = c.flag + ' ' + c.name;
+      openCountries();
+      showToast('Страна: ' + c.name);
+    };
+    g.appendChild(d);
+  });
+  closeOverlay('menuOverlay');
+  document.getElementById('countriesOverlay').classList.add('show');
+}
+
+// ================= FRIENDS =================
+function openFriends(){
+  const link = 'https://t.me/your_bot?start=ref' + (state.spins * 7 % 9999);
+  document.getElementById('refLink').textContent = link;
+  closeOverlay('menuOverlay');
+  document.getElementById('friendsOverlay').classList.add('show');
+}
+function copyRef(){
+  const txt = document.getElementById('refLink').textContent;
+  navigator.clipboard?.writeText(txt).then(()=>showToast('Скопировано!')).catch(()=>{});
+}
+
+// ================= DAILY =================
+function openDaily(){
+  const popup = document.getElementById('dailyPopup');
+  const now = Date.now();
+  const canClaim = now - state.lastDaily > 20*60*60*1000;
+  const txt = document.getElementById('dailyText');
+  if (canClaim){
+    const streak = state.dailyStreak + 1;
+    const bonus = 500 * streak;
+    txt.innerHTML = `День <b>${streak}</b> подряд!<br>Награда: <b style="color:#ffd700;">${fmt(bonus)} ₽</b>`;
+    document.querySelector('#dailyPopup .popup-btn').textContent = 'Забрать';
+    document.querySelector('#dailyPopup .popup-btn').onclick = claimDaily;
+  } else {
+    const next = new Date(state.lastDaily + 20*60*60*1000);
+    txt.innerHTML = `Уже забрал сегодня!<br>Следующий через: <b>${next.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}</b>`;
+    document.querySelector('#dailyPopup .popup-btn').textContent = 'Ок';
+    document.querySelector('#dailyPopup .popup-btn').onclick = ()=>{
+      popup.classList.remove('show');
+    };
+  }
+  popup.classList.add('show');
+}
+function claimDaily(){
+  const now = Date.now();
+  if (now - state.lastDaily < 20*60*60*1000){ showToast('Уже забрал!'); return; }
+  state.dailyStreak++;
+  state.lastDaily = now;
+  const bonus = 500 * state.dailyStreak;
+  state.balance += bonus;
+  state.exp += 20;
+  while (state.exp >= state.expMax){
+    state.exp -= state.expMax;
+    state.level++;
+    state.expMax = expForLevel(state.level);
+  }
+  save(); updateUI();
+  document.getElementById('dailyPopup').classList.remove('show');
+  showToast('🎁 +' + fmt(bonus) + ' ₽');
+}
+
+// ================= WHEEL =================
+const WHEEL_PRIZES = [
+  { label:'500 ₽',    type:'money', value:500 },
+  { label:'iPhone 4', type:'phone', phone:'iPhone 4' },
+  { label:'1000 ₽',   type:'money', value:1000 },
+  { label:'Samsung S8', type:'phone', phone:'Samsung S8' },
+  { label:'250 ₽',    type:'money', value:250 },
+  { label:'Nokia 3310', type:'phone', phone:'Nokia 3310' },
+  { label:'5000 ₽',   type:'money', value:5000 },
+  { label:'iPhone X', type:'phone', phone:'iPhone X' },
+];
+let wheelRot = 0;
+let wheelSpinning = false;
+
+function initWheel(){
+  const w = document.getElementById('wheel');
+  // labels
+  w.querySelectorAll('.wheel-label').forEach(e=>e.remove());
+  const n = WHEEL_PRIZES.length;
+  WHEEL_PRIZES.forEach((p,i)=>{
+    const angle = (360/n)*i + (360/n)/2;
+    const el = document.createElement('div');
+    el.className = 'wheel-label';
+    el.style.transform = `rotate(${angle-90}deg) translate(90px) rotate(${-(angle-90)}deg)`;
+    el.textContent = p.label;
+    el.style.color = '#fff';
+    el.style.textShadow = '0 1px 2px #000';
+    el.style.fontSize = '10px';
+    w.appendChild(el);
+  });
+}
+
+function openWheel(){
+  initWheel();
+  closeOverlay('menuOverlay');
+  document.getElementById('wheelOverlay').classList.add('show');
+}
+
+function spinWheel(){
+  if (wheelSpinning) return;
+  wheelSpinning = true;
+  const btn = document.getElementById('wheelBtn');
+  btn.disabled = true;
+  btn.textContent = 'Крутим...';
+
+  const idx = rnd(WHEEL_PRIZES.length);
+  const n = WHEEL_PRIZES.length;
+  const sliceAngle = 360/n;
+  // чтобы указатель (сверху) остановился на idx
+  const targetAngle = 360*8 + (360 - idx*sliceAngle - sliceAngle/2);
+  wheelRot = targetAngle;
+
+  const w = document.getElementById('wheel');
+  w.style.transform = `rotate(${wheelRot}deg)`;
+
+  setTimeout(()=>{
+    wheelSpinning = false;
+    btn.disabled = false;
+    btn.textContent = 'Крутить ещё (500 ₽)';
+    const prize = WHEEL_PRIZES[idx];
+    if (prize.type === 'money'){
+      state.balance += prize.value;
+      showToast('🎉 +' + fmt(prize.value) + ' ₽');
+    } else {
+      const p = PHONES.find(x=>x.name===prize.phone);
+      if (p){ state.phones.push(p); showToast('🎉 Телефон: ' + p.name + '!'); }
+    }
+    state.exp += 15;
+    while (state.exp >= state.expMax){
+      state.exp -= state.expMax;
+      state.level++;
+      state.expMax = expForLevel(state.level);
+    }
+    save(); updateUI();
+  }, 4700);
+}
+
+// ================= INIT =================
+updateUI();
+document.getElementById('reelRegion').textContent = COUNTRIES[state.country].flag + ' ' + COUNTRIES[state.country].name;
+</script>
+</body>
+</html>
