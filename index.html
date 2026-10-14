@@ -1,0 +1,2906 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Номерок | Генератор</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; overflow:hidden; }
+body {
+  background:#000; color:#fff;
+  font-family:-apple-system,'Segoe UI',Roboto,sans-serif;
+  user-select:none; position:relative;
+}
+#snow { position:fixed; inset:0; pointer-events:none; z-index:1; overflow:hidden; }
+.snowflake { position:absolute; background:#fff; border-radius:50%; opacity:.5; animation:fall linear infinite; }
+@keyframes fall {
+  0% { transform:translateY(-20px) translateX(0); opacity:0; }
+  10% { opacity:.6; }
+  90% { opacity:.6; }
+  100% { transform:translateY(105vh) translateX(30px); opacity:0; }
+}
+.top-bar {
+  position:fixed; top:0; left:0; right:0; z-index:10;
+  display:flex; align-items:center; gap:8px;
+  padding:12px 14px;
+  background:linear-gradient(180deg,rgba(0,0,0,.95),transparent);
+}
+.menu-btn {
+  width:40px; height:40px; border-radius:12px;
+  background:rgba(255,255,255,.06); border:none;
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  gap:4px; cursor:pointer; position:relative; flex-shrink:0;
+}
+.menu-btn span { width:16px; height:2px; background:#fff; border-radius:2px; }
+.menu-btn .dot-red {
+  position:absolute; top:-2px; right:-2px; width:10px; height:10px;
+  border-radius:50%; background:#ff3b5c;
+}
+.lvl-pill {
+  height:40px; padding:0 14px; border-radius:12px;
+  background:rgba(255,255,255,.06);
+  display:flex; align-items:center; gap:8px; cursor:pointer;
+}
+.lvl-pill .num { font-size:14px; font-weight:800; }
+.lvl-pill .bar { width:44px; height:6px; border-radius:3px; background:rgba(255,255,255,.12); overflow:hidden; }
+.lvl-pill .bar > div { height:100%; background:linear-gradient(90deg,#2ecc71,#00ff88); border-radius:3px; transition:width .4s; }
+.clover-pill {
+  height:40px; padding:0 12px; border-radius:12px;
+  background:rgba(255,255,255,.06);
+  display:flex; align-items:center; gap:6px;
+  font-size:14px; font-weight:800; cursor:pointer;
+}
+.balance-box { margin-left:auto; text-align:right; }
+.balance-box .lbl { font-size:9px; color:#888; letter-spacing:1px; text-transform:uppercase; }
+.balance-box .val { font-size:16px; font-weight:900; color:#ffd700; }
+.tabs {
+  position:fixed; top:62px; left:0; right:0; z-index:9;
+  display:flex; gap:6px; padding:0 14px 10px;
+  background:linear-gradient(180deg,#000 60%,transparent);
+}
+.tab {
+  flex:1; padding:10px 6px; border-radius:12px;
+  background:rgba(255,255,255,.05); border:none;
+  color:#888; font-size:12px; font-weight:800;
+  cursor:pointer; transition:all .2s;
+}
+.tab.active { background:rgba(255,255,255,.15); color:#fff; }
+.tab.gold { background:linear-gradient(135deg,#ffd700,#ff9500); color:#000; flex:0 0 auto; padding:10px 14px; font-size:12px; }
+.main {
+  position:relative; z-index:5; height:100vh;
+  display:flex; flex-direction:column;
+  padding:130px 14px 90px; overflow-y:auto;
+}
+.main::-webkit-scrollbar { display:none; }
+.active-boosts { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; justify-content:center; }
+.boost-pill {
+  padding:6px 12px; border-radius:20px;
+  background:linear-gradient(135deg,#ffd700,#ff9500);
+  color:#000; font-size:11px; font-weight:900;
+}
+.boost-pill.green { background:linear-gradient(135deg,#2ecc71,#00ff88); }
+.boost-pill.purple { background:linear-gradient(135deg,#8a2be2,#ff0080); color:#fff; }
+.rarity-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  background:rgba(20,20,26,.85); border-radius:14px;
+  padding:12px 16px; margin-bottom:12px;
+  border:1px solid rgba(255,255,255,.05);
+}
+.rarity-name { font-size:13px; font-weight:800; letter-spacing:1px; }
+.rarity-price { font-size:18px; font-weight:900; }
+.rarity-dots { display:flex; gap:4px; margin-top:6px; }
+.rarity-dots span { width:10px; height:6px; border-radius:3px; background:rgba(255,255,255,.15); }
+.rarity-dots span.on { background:#3b82f6; }
+.number-card {
+  background:linear-gradient(135deg,#1a1a24,#0d0d12);
+  border-radius:20px; padding:24px 18px; margin-bottom:14px;
+  border:1px solid rgba(255,255,255,.08);
+  text-align:center; position:relative; overflow:hidden;
+  transition:box-shadow .3s;
+}
+.number-card.jackpot { animation:jackpotGlow 1.5s infinite; }
+@keyframes jackpotGlow {
+  0%,100% { box-shadow:0 0 30px #ffd700, 0 0 60px #ff0080; }
+  50% { box-shadow:0 0 60px #ffd700, 0 0 120px #ff0080; }
+}
+.number-big {
+  font-size:26px; font-weight:900; letter-spacing:1px;
+  margin:8px 0 10px; word-break:break-word;
+  font-variant-numeric:tabular-nums;
+}
+.number-region { font-size:13px; color:#888; margin-bottom:8px; }
+.beauty-list { display:flex; flex-direction:column; gap:4px; font-size:12px; color:#aaa; margin-bottom:12px; }
+.beauty-list .item { color:#2ecc71; font-weight:700; }
+.beauty-list .mult { color:#ffd700; }
+.jackpot-badge {
+  display:none; padding:4px 12px; border-radius:10px;
+  background:linear-gradient(90deg,#ffd700,#ff0080);
+  color:#000; font-size:11px; font-weight:900;
+  margin:8px auto 0; width:fit-content;
+  animation:jackpotPulse .8s infinite;
+}
+.jackpot-badge.show { display:block; }
+@keyframes jackpotPulse {
+  0%,100% { transform:scale(1); }
+  50% { transform:scale(1.1); }
+}
+.actions { display:flex; gap:8px; justify-content:center; margin-top:10px; }
+.actions button {
+  background:rgba(255,255,255,.08); border:none;
+  color:#fff; padding:10px 18px; border-radius:12px;
+  font-size:13px; font-weight:700; cursor:pointer;
+}
+.actions button:active { background:rgba(255,255,255,.2); }
+.stake-row { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+.stake-btn {
+  flex:1; padding:12px; border-radius:12px;
+  background:rgba(255,255,255,.06); border:none;
+  color:#fff; font-weight:800; font-size:13px; cursor:pointer;
+}
+.stake-btn.active { background:linear-gradient(135deg,#8a2be2,#ff0080); }
+.spin-row { display:flex; gap:8px; margin-bottom:12px; }
+.spin-btn {
+  flex:1; padding:18px; border:none; border-radius:18px;
+  font-size:17px; font-weight:900; color:#000; cursor:pointer;
+  letter-spacing:1px;
+  background:linear-gradient(90deg,#00ff88,#00bfff,#8a2be2,#ff0080,#ff8c00,#ffd700,#00ff88);
+  background-size:400% 100%;
+  animation:rainbow 4s linear infinite;
+  box-shadow:0 0 30px rgba(0,255,136,.4);
+}
+.spin-btn:disabled { opacity:.5; animation-play-state:paused; }
+.auto-btn {
+  width:70px; padding:18px 8px; border:none; border-radius:18px;
+  font-size:13px; font-weight:900; color:#000; cursor:pointer;
+  background:linear-gradient(135deg,#2ecc71,#00ff88);
+}
+.auto-btn.active { background:linear-gradient(135deg,#ff3b5c,#ff0080); color:#fff; }
+@keyframes rainbow { 0% { background-position:0% 50%; } 100% { background-position:400% 50%; } }
+.bottom-nav {
+  position:fixed; bottom:0; left:0; right:0; z-index:20;
+  background:rgba(10,10,14,.95); backdrop-filter:blur(20px);
+  display:flex; padding:8px 4px 12px;
+  border-top:1px solid rgba(255,255,255,.06);
+}
+.nav-item {
+  flex:1; display:flex; flex-direction:column; align-items:center;
+  gap:4px; padding:8px 4px; cursor:pointer;
+  color:#666; font-size:10px; font-weight:700;
+  position:relative;
+}
+.nav-item.active { color:#2ecc71; }
+.nav-item .ic { font-size:20px; }
+.nav-badge {
+  position:absolute; top:2px; right:12px;
+  min-width:16px; height:16px; border-radius:8px;
+  background:#ff3b5c; color:#fff; font-size:9px; font-weight:900;
+  display:flex; align-items:center; justify-content:center; padding:0 4px;
+}
+.overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.95); z-index:100;
+  display:none; flex-direction:column; padding:20px; overflow-y:auto;
+}
+.overlay.show { display:flex; }
+.overlay::-webkit-scrollbar { display:none; }
+.overlay-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:24px; padding-top:10px;
+}
+.overlay-title { font-size:22px; font-weight:900; }
+.close-btn {
+  width:40px; height:40px; border-radius:50%;
+  background:rgba(255,255,255,.08); border:none; color:#fff;
+  font-size:22px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.profile-card {
+  background:rgba(25,25,32,.95); border-radius:20px; padding:18px;
+  margin-bottom:14px; display:flex; align-items:center; gap:14px;
+  border:1px solid rgba(255,255,255,.06);
+}
+.avatar {
+  width:52px; height:52px; border-radius:50%;
+  background:linear-gradient(135deg,#2ecc71,#00bfff);
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; font-weight:900; overflow:hidden;
+}
+.avatar img { width:100%; height:100%; object-fit:cover; }
+.profile-info { flex:1; }
+.profile-level { font-size:18px; font-weight:900; }
+.profile-exp { font-size:11px; color:#888; margin-top:3px; }
+.profile-balance { text-align:right; }
+.profile-balance .lbl { font-size:9px; color:#888; letter-spacing:1px; text-transform:uppercase; }
+.profile-balance .val { font-size:17px; font-weight:900; color:#ffd700; margin-top:2px; }
+.cat-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.cat-card {
+  position:relative; border-radius:20px; padding:18px 14px;
+  background:rgba(20,20,26,.9); cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  overflow:hidden; border:1px solid transparent;
+}
+.cat-card::before {
+  content:''; position:absolute; inset:0; padding:2px;
+  border-radius:20px; pointer-events:none;
+  background:var(--grad, linear-gradient(135deg,#2ecc71,#00ff88));
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+}
+.cat-icon {
+  width:58px; height:58px; border-radius:16px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:28px; position:relative; z-index:1;
+  background:var(--bgic, rgba(46,204,113,.15));
+}
+.cat-label { font-size:13px; font-weight:800; position:relative; z-index:1; }
+.cat-badge {
+  position:absolute; top:12px; right:12px;
+  min-width:20px; height:20px; border-radius:10px;
+  background:#ff3b5c; color:#fff; font-size:11px; font-weight:900;
+  display:flex; align-items:center; justify-content:center; padding:0 6px;
+  z-index:2;
+}
+.phone-model {
+  position:relative; display:inline-block;
+  width:70px; height:100px; border-radius:12px;
+  background:linear-gradient(135deg,var(--c1,#444),var(--c2,#222));
+  border:2px solid rgba(255,255,255,.15);
+  box-shadow:0 6px 14px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.2);
+}
+.phone-model .screen {
+  position:absolute; top:14px; left:8px; right:8px; bottom:24px;
+  border-radius:6px;
+  background:linear-gradient(180deg,#0a0a15,#1a1a30);
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:inset 0 0 8px rgba(0,255,180,.15);
+}
+.phone-model .screen::after {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.08) 50%,transparent 60%);
+  border-radius:6px;
+}
+.phone-model .notch {
+  position:absolute; top:16px; left:50%; transform:translateX(-50%);
+  width:22px; height:3px; border-radius:2px;
+  background:rgba(0,0,0,.7);
+}
+.phone-model .btn-home {
+  position:absolute; bottom:6px; left:50%; transform:translateX(-50%);
+  width:14px; height:14px; border-radius:50%;
+  background:rgba(0,0,0,.5);
+  border:1px solid rgba(255,255,255,.15);
+}
+.phone-model .btn-side {
+  position:absolute; right:-3px; top:30px;
+  width:3px; height:14px; border-radius:2px;
+  background:rgba(255,255,255,.2);
+}
+.phone-model .btn-side.b2 { top:50px; }
+.phone-model.feature { width:60px; height:105px; border-radius:14px; }
+.phone-model.feature .screen { top:12px; left:10px; right:10px; bottom:44px; background:linear-gradient(180deg,#0f2a1f,#1a4a2f); border-radius:4px; }
+.phone-model.feature .keys {
+  position:absolute; bottom:6px; left:6px; right:6px;
+  display:grid; grid-template-columns:repeat(3,1fr); gap:2px; height:32px;
+}
+.phone-model.feature .keys span { background:rgba(255,255,255,.15); border-radius:2px; }
+.phone-model.feature .antenna {
+  position:absolute; top:-8px; right:6px;
+  width:3px; height:10px; background:rgba(255,255,255,.3);
+  border-radius:2px;
+}
+.phone-model.lux {
+  background:linear-gradient(135deg,#ffd700,#b8860b);
+  border-color:#fff3b0;
+  box-shadow:0 6px 20px rgba(255,215,0,.4), inset 0 1px 0 rgba(255,255,255,.5);
+}
+.phone-model.lux .screen { background:linear-gradient(180deg,#0a0a15,#2a1a30); box-shadow:inset 0 0 12px rgba(255,215,0,.3); }
+.phone-model.lux::after {
+  content:''; position:absolute; top:8px; left:50%; transform:translateX(-50%);
+  width:6px; height:6px; border-radius:50%;
+  background:radial-gradient(circle,#fff,#00bfff);
+  box-shadow:0 0 6px #00bfff;
+}
+.phone-model.fold { width:60px; height:110px; border-radius:14px; }
+.phone-model.fold .screen { top:12px; left:8px; right:8px; bottom:12px; }
+.phone-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.phone-card {
+  background:rgba(20,20,26,.9); border-radius:18px; padding:14px 10px;
+  text-align:center; cursor:pointer;
+  border:1px solid rgba(255,255,255,.06);
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+}
+.phone-card .name { font-size:12px; font-weight:800; }
+.phone-card .price { font-size:12px; font-weight:800; }
+.phone-card .sell-btn {
+  width:100%; padding:8px; border:none; border-radius:8px;
+  background:linear-gradient(135deg,#ff3b5c,#ff0080);
+  color:#fff; font-weight:800; font-size:11px; cursor:pointer;
+  margin-top:4px;
+}
+.sim-slot {
+  margin-top:4px; padding:6px 8px; border-radius:8px;
+  background:rgba(255,255,255,.05); font-size:10px; color:#666;
+  display:flex; align-items:center; justify-content:center; gap:4px;
+  width:100%; flex-wrap:wrap;
+}
+.sim-slot.filled { background:rgba(138,43,226,.15); color:#c084fc; font-weight:800; }
+.sim-slot .pull-btn {
+  background:#ff3b5c; border:none; color:#fff;
+  border-radius:6px; padding:3px 8px; font-size:10px;
+  font-weight:800; cursor:pointer; margin-left:4px;
+}
+.sim-card-h {
+  background:rgba(20,20,26,.9); border-radius:16px; padding:14px;
+  display:flex; align-items:center; gap:14px;
+  border:1px solid rgba(255,255,255,.06);
+  margin-bottom:12px; position:relative; overflow:hidden;
+}
+.sim-card-h::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:4px;
+  background:var(--rc, #888);
+}
+.sim-card-h .sim-chip {
+  width:70px; height:50px; border-radius:8px;
+  background:linear-gradient(135deg,#ffd700,#b8860b);
+  border:2px solid #fff3b0;
+  position:relative; flex-shrink:0;
+  box-shadow:0 0 15px rgba(255,215,0,.3);
+}
+.sim-card-h .sim-chip::before {
+  content:''; position:absolute; inset:8px;
+  background:
+    linear-gradient(90deg, #b8860b 2px, transparent 2px) 0 0/8px 8px,
+    linear-gradient(0deg, #b8860b 2px, transparent 2px) 0 0/8px 8px;
+  border-radius:3px;
+  border:1px solid rgba(0,0,0,.3);
+}
+.sim-card-h .sim-info { flex:1; }
+.sim-card-h .sim-num { font-size:14px; font-weight:900; margin-bottom:4px; }
+.sim-card-h .sim-meta { font-size:11px; color:#888; margin-bottom:2px; }
+.sim-card-h .sim-rarity { font-size:11px; font-weight:800; }
+.sim-card-h .sim-actions { display:flex; flex-direction:column; gap:6px; }
+.sim-card-h .sim-actions button {
+  padding:6px 10px; border:none; border-radius:8px;
+  font-size:10px; font-weight:800; cursor:pointer; white-space:nowrap;
+}
+.boxes-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.box-card {
+  background:rgba(20,20,26,.9); border-radius:18px; padding:18px 12px;
+  text-align:center; cursor:pointer;
+  border:1px solid rgba(255,255,255,.06);
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+}
+.box-card .box-emoji { font-size:46px; margin-bottom:4px; }
+.box-card .box-name { font-size:12px; font-weight:900; }
+.box-card .box-price { font-size:14px; font-weight:900; }
+.box-card .box-chance { font-size:10px; color:#777; }
+.case-strip-wrap {
+  width:100%; overflow:hidden; position:relative;
+  margin:20px 0; padding:10px 0;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent);
+}
+.case-strip { display:flex; gap:12px; transition:transform 4s cubic-bezier(.15,.9,.2,1); }
+.case-item {
+  min-width:130px; height:160px; border-radius:16px;
+  background:rgba(30,30,38,.95);
+  border:1px solid var(--rc, rgba(255,255,255,.08));
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:8px; padding:10px; flex-shrink:0;
+  box-shadow:0 0 20px var(--glow, transparent);
+  transition:box-shadow .3s, border-color .3s;
+}
+.case-item .nm { font-size:10px; font-weight:800; text-align:center; color:#ccc; }
+.case-pointer {
+  position:absolute; top:0; bottom:0; left:50%; width:3px;
+  background:#ffd700; transform:translateX(-50%); z-index:3;
+  box-shadow:0 0 15px #ffd700;
+}
+.case-pointer::before, .case-pointer::after {
+  content:''; position:absolute; left:50%; transform:translateX(-50%);
+  width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent;
+}
+.case-pointer::before { top:-4px; border-top:10px solid #ffd700; }
+.case-pointer::after { bottom:-4px; border-bottom:10px solid #ffd700; }
+.country-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+.country-btn {
+  background:rgba(20,20,26,.9); border-radius:14px; padding:14px 12px;
+  display:flex; align-items:center; gap:10px; cursor:pointer;
+  border:1px solid rgba(255,255,255,.06); font-size:13px; font-weight:800;
+  color:#fff;
+}
+.country-btn.active { border-color:#ffd700; background:rgba(60,60,72,.95); }
+.country-btn .flag { font-size:22px; }
+.popup {
+  position:fixed; bottom:0; left:0; right:0; z-index:200;
+  background:#1a1a20; border-radius:24px 24px 0 0; padding:22px;
+  transform:translateY(100%); transition:transform .3s;
+  max-height:80vh; overflow-y:auto;
+}
+.popup.show { transform:translateY(0); }
+.popup-handle {
+  width:40px; height:4px; background:rgba(255,255,255,.2);
+  border-radius:2px; margin:0 auto 18px;
+}
+.popup-title { font-size:19px; font-weight:900; margin-bottom:8px; }
+.popup-text { font-size:14px; color:#aaa; line-height:1.5; margin-bottom:18px; }
+.popup-btn {
+  width:100%; padding:16px; border:none; border-radius:14px;
+  font-size:15px; font-weight:900; cursor:pointer;
+  background:linear-gradient(90deg,#00ff88,#00bfff,#8a2be2,#ff0080);
+  background-size:300% 100%;
+  animation:rainbow 4s linear infinite;
+  color:#fff; margin-bottom:8px;
+}
+.popup-btn.green { background:linear-gradient(90deg,#2ecc71,#00ff88); }
+.popup-btn.gold { background:linear-gradient(90deg,#ffd700,#ff9500); color:#000; }
+.popup-btn.red { background:linear-gradient(90deg,#ff3b5c,#ff0080); }
+.ref-link {
+  background:rgba(30,30,38,.9); border-radius:12px; padding:14px;
+  font-size:12px; word-break:break-all; color:#8a2be2;
+  margin-bottom:14px; border:1px dashed rgba(138,43,226,.4);
+}
+.empty { text-align:center; color:#666; padding:40px 0; font-size:14px; grid-column:1/-1; }
+.toast {
+  position:fixed; top:80px; left:50%; transform:translateX(-50%) translateY(-20px);
+  background:rgba(30,30,40,.98); padding:14px 22px; border-radius:14px;
+  font-size:13px; z-index:300; opacity:0; transition:all .3s;
+  border:1px solid rgba(255,255,255,.12); max-width:90%; text-align:center;
+  pointer-events:none;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.snackbar {
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(120px);
+  background:rgba(30,30,38,.98); padding:12px 22px; border-radius:14px;
+  font-size:13px; border:1px solid rgba(255,255,255,.12);
+  transition:transform .3s; z-index:50; max-width:90%; text-align:center;
+}
+.snackbar.show { transform:translateX(-50%) translateY(0); }
+.wheel-outer { position:relative; width:290px; height:290px; margin:20px auto; }
+.wheel {
+  width:290px; height:290px; border-radius:50%;
+  transition:transform 4.5s cubic-bezier(.15,.9,.2,1);
+  box-shadow:0 0 40px rgba(255,215,0,.25);
+  background:conic-gradient(
+    #ff0080 0deg 45deg, #ff8c00 45deg 90deg,
+    #ffd700 90deg 135deg, #00ff88 135deg 180deg,
+    #00bfff 180deg 225deg, #8a2be2 225deg 270deg,
+    #ff3b5c 270deg 315deg, #2ecc71 315deg 360deg
+  );
+  position:relative;
+}
+.wheel-label {
+  position:absolute;
+  top:50%; left:50%;
+  width:80px; margin-left:-40px; margin-top:-8px;
+  text-align:center; color:#fff;
+  font-size:11px; font-weight:900;
+  text-shadow:0 1px 3px rgba(0,0,0,.95);
+  pointer-events:none;
+  transform-origin:50% 50%;
+  transform: rotate(var(--ang)) translateY(-105px);
+}
+.wheel-center {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:64px; height:64px; border-radius:50%; background:#111;
+  border:3px solid #ffd700; display:flex; align-items:center; justify-content:center;
+  font-size:20px; z-index:4;
+}
+.wheel-pointer {
+  position:absolute; top:-14px; left:50%; transform:translateX(-50%);
+  width:0; height:0; border-left:16px solid transparent; border-right:16px solid transparent;
+  border-top:26px solid #ffd700; z-index:5; filter:drop-shadow(0 0 8px #ffd700);
+}
+.winter-header {
+  background:linear-gradient(135deg,#00bfff,#8a2be2);
+  border-radius:20px; padding:20px; margin-bottom:14px; text-align:center;
+}
+.winter-title { font-size:24px; font-weight:900; margin-bottom:6px; }
+.winter-sub { font-size:13px; opacity:.9; }
+.winter-snow { font-size:60px; margin:10px 0; animation:spinW 6s linear infinite; display:inline-block; }
+@keyframes spinW { 100% { transform:rotate(360deg); } }
+.winter-rules {
+  background:rgba(20,20,30,.9); border-radius:16px; padding:16px; margin-bottom:14px;
+  border:1px solid rgba(0,191,255,.2);
+}
+.rules-title { font-size:14px; font-weight:900; margin-bottom:12px; color:#00bfff; }
+.rule {
+  display:flex; gap:10px; margin-bottom:10px;
+  font-size:12px; color:#ccc; line-height:1.5; align-items:flex-start;
+}
+.rule:last-child { margin-bottom:0; }
+.rule-num {
+  width:20px; height:20px; border-radius:50%;
+  background:linear-gradient(135deg,#00bfff,#8a2be2);
+  color:#fff; font-weight:900; font-size:11px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.winter-progress {
+  background:rgba(0,0,0,.3); border-radius:16px; padding:16px; margin-bottom:14px;
+}
+.winter-progress-row {
+  display:flex; align-items:center; justify-content:space-around; margin-bottom:12px;
+}
+.prog-item { text-align:center; }
+.prog-icon { font-size:28px; margin-bottom:4px; }
+.prog-val { font-size:20px; font-weight:900; color:#00bfff; }
+.prog-lbl { font-size:10px; color:#888; text-transform:uppercase; letter-spacing:1px; }
+.prog-arrow { font-size:24px; color:#888; }
+.winter-progress-bar {
+  height:12px; background:rgba(255,255,255,.15); border-radius:6px; overflow:hidden;
+}
+.winter-progress-fill {
+  height:100%; background:linear-gradient(90deg,#00ff88,#00bfff);
+  border-radius:6px; transition:width .4s;
+}
+.prog-hint { font-size:11px; color:#888; text-align:center; margin-top:8px; }
+.winter-rewards-title { font-size:16px; font-weight:900; margin-bottom:10px; color:#fff; }
+.winter-rewards { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.winter-reward {
+  background:rgba(25,25,32,.9); border-radius:14px; padding:14px; text-align:center;
+  border:1px solid rgba(255,255,255,.06); position:relative;
+}
+.winter-reward.claimed { opacity:.5; }
+.winter-reward .r-icon { font-size:32px; margin-bottom:6px; }
+.winter-reward .r-name { font-size:11px; font-weight:800; margin-bottom:4px; }
+.winter-reward .r-req { font-size:10px; color:#888; margin-bottom:8px; }
+.winter-reward .r-btn {
+  padding:6px 12px; border:none; border-radius:8px;
+  background:linear-gradient(135deg,#00ff88,#00bfff);
+  color:#000; font-weight:900; font-size:10px; cursor:pointer; width:100%;
+}
+.winter-reward .r-btn:disabled { opacity:.4; }
+.banner-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.banner-opt {
+  height:60px; border-radius:12px; cursor:pointer; border:2px solid transparent;
+}
+.banner-opt.active { border-color:#ffd700; }
+.task-card {
+  background:rgba(25,25,32,.9); border-radius:16px; padding:14px;
+  margin-bottom:10px; display:flex; align-items:center; gap:12px;
+  border:1px solid rgba(255,255,255,.06);
+}
+.task-card.done { border-color:#2ecc71; background:rgba(46,204,113,.1); }
+.task-icon { font-size:28px; }
+.task-info { flex:1; }
+.task-name { font-size:13px; font-weight:800; margin-bottom:4px; }
+.task-progress { font-size:11px; color:#888; }
+.task-reward { font-size:12px; font-weight:800; color:#ffd700; }
+.task-claim {
+  padding:8px 14px; border:none; border-radius:10px;
+  background:linear-gradient(135deg,#2ecc71,#00ff88);
+  color:#000; font-weight:900; font-size:11px; cursor:pointer;
+}
+.task-claim:disabled { opacity:.4; }
+#confetti { position:fixed; inset:0; pointer-events:none; z-index:150; display:none; }
+#confetti.show { display:block; }
+.confetti-piece {
+  position:absolute; width:10px; height:10px;
+  top:-20px; animation:confFall linear forwards;
+}
+@keyframes confFall {
+  0% { transform:translateY(0) rotate(0deg); opacity:1; }
+  100% { transform:translateY(105vh) rotate(720deg); opacity:0; }
+}
+
+/* ПИТОМЕЦ */
+.pet-container {
+  background:linear-gradient(135deg,#1a1a24,#2a1a30);
+  border-radius:20px; padding:20px; text-align:center; margin-bottom:14px;
+  border:1px solid rgba(255,215,0,.2);
+}
+.pet-emoji { font-size:80px; margin-bottom:10px; animation:petBounce 2s ease-in-out infinite; }
+@keyframes petBounce {
+  0%,100% { transform:translateY(0); }
+  50% { transform:translateY(-10px); }
+}
+.pet-name { font-size:20px; font-weight:900; margin-bottom:6px; }
+.pet-level { font-size:13px; color:#ffd700; font-weight:800; margin-bottom:10px; }
+.pet-exp-bar { height:12px; background:rgba(255,255,255,.15); border-radius:6px; overflow:hidden; margin-bottom:6px; }
+.pet-exp-fill { height:100%; background:linear-gradient(90deg,#ffd700,#ff9500); border-radius:6px; transition:width .4s; }
+.pet-exp-text { font-size:11px; color:#888; margin-bottom:12px; }
+.pet-actions { display:flex; gap:8px; }
+.pet-actions button {
+  flex:1; padding:12px; border:none; border-radius:12px;
+  font-size:12px; font-weight:900; cursor:pointer;
+}
+.pet-feed { background:linear-gradient(135deg,#2ecc71,#00ff88); color:#000; }
+.pet-play { background:linear-gradient(135deg,#8a2be2,#ff0080); color:#fff; }
+.pet-sleep { background:linear-gradient(135deg,#00bfff,#8a2be2); color:#fff; }
+.pet-stats {
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;
+  margin-bottom:14px;
+}
+.pet-stat {
+  background:rgba(255,255,255,.05); border-radius:12px; padding:10px;
+  text-align:center;
+}
+.pet-stat .ic { font-size:20px; }
+.pet-stat .val { font-size:16px; font-weight:900; color:#fff; margin-top:2px; }
+.pet-stat .lbl { font-size:9px; color:#888; text-transform:uppercase; }
+
+/* ДОСТИЖЕНИЯ */
+.ach-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.ach-card {
+  background:rgba(25,25,32,.9); border-radius:16px; padding:14px;
+  text-align:center; border:1px solid rgba(255,255,255,.06);
+  position:relative;
+}
+.ach-card.done { border-color:#ffd700; background:rgba(255,215,0,.08); }
+.ach-icon { font-size:36px; margin-bottom:6px; }
+.ach-name { font-size:11px; font-weight:800; margin-bottom:4px; }
+.ach-desc { font-size:10px; color:#888; margin-bottom:6px; }
+.ach-progress { font-size:10px; color:#ffd700; font-weight:800; }
+.ach-claimed {
+  position:absolute; top:8px; right:8px;
+  background:#2ecc71; color:#fff; border-radius:50%;
+  width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:900;
+}
+
+/* КОЛЛЕКЦИЯ */
+.coll-list { display:flex; flex-direction:column; gap:10px; }
+.coll-item {
+  background:rgba(25,25,32,.9); border-radius:14px; padding:12px 14px;
+  display:flex; align-items:center; gap:12px;
+  border-left:4px solid var(--rc, #888);
+}
+.coll-num { font-size:14px; font-weight:900; flex:1; }
+.coll-rarity { font-size:11px; font-weight:800; }
+.coll-price { font-size:11px; color:#ffd700; font-weight:800; }
+
+/* БИЗНЕС */
+.biz-card {
+  background:rgba(25,25,32,.9); border-radius:16px; padding:14px;
+  margin-bottom:12px; border:1px solid rgba(255,255,255,.06);
+  display:flex; align-items:center; gap:12px;
+}
+.biz-card.owned { border-color:#2ecc71; background:rgba(46,204,113,.08); }
+.biz-icon { font-size:32px; }
+.biz-info { flex:1; }
+.biz-name { font-size:13px; font-weight:900; margin-bottom:4px; }
+.biz-desc { font-size:11px; color:#888; margin-bottom:4px; }
+.biz-income { font-size:11px; color:#ffd700; font-weight:800; }
+.biz-buy {
+  padding:10px 14px; border:none; border-radius:10px;
+  background:linear-gradient(135deg,#ffd700,#ff9500);
+  color:#000; font-weight:900; font-size:11px; cursor:pointer;
+  white-space:nowrap;
+}
+.biz-buy:disabled { opacity:.4; }
+</style>
+</head>
+<body>
+
+<div id="snow"></div>
+<div id="confetti"></div>
+
+<div class="top-bar">
+  <button class="menu-btn" onclick="openOverlay('menuOverlay')">
+    <span></span><span></span><span></span>
+    <div class="dot-red" id="menuDot"></div>
+  </button>
+  <div class="lvl-pill" id="logoBtn">
+    <span class="num" id="lvlNum">1</span>
+    <div class="bar"><div id="lvlBar" style="width:0%"></div></div>
+  </div>
+  <div class="clover-pill" onclick="openPetOverlay()">
+    <span>🍀</span><span id="cloverCount">0</span>
+  </div>
+  <div class="balance-box">
+    <div class="lbl">Баланс</div>
+    <div class="val" id="balance">1 000 ₽</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" id="tabNumbers" onclick="switchTab('numbers')">Номера</button>
+  <button class="tab" id="tabPhones" onclick="switchTab('phones')">Телефоны</button>
+  <button class="tab" id="tabSims" onclick="switchTab('sims')">Симки</button>
+  <button class="tab gold" onclick="openShopOverlay()">⭐ Магазин</button>
+</div>
+
+<div class="main" id="mainArea">
+  <div class="active-boosts" id="activeBoosts"></div>
+  <div class="rarity-bar">
+    <div>
+      <div class="rarity-name" id="rarityName" style="color:#888;">Обычный</div>
+      <div class="rarity-dots" id="rarityDots">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+    <div class="rarity-price" id="rarityPrice" style="color:#888;">0 ₽</div>
+  </div>
+  <div class="number-card" id="numberCard">
+    <div style="font-size:11px;color:#666;letter-spacing:2px;text-transform:uppercase;" id="numRarity">Крути номер</div>
+    <div class="number-big" id="numBig">+7 (___) ___-__-__</div>
+    <div class="number-region" id="numRegion">🇷🇺 Россия</div>
+    <div class="beauty-list" id="beautyList"></div>
+    <div class="jackpot-badge" id="jackpotBadge">🎰 ДЖЕКПОТ ×10 🎰</div>
+    <div class="actions">
+      <button onclick="saveToPhone()">📱 Сохранить</button>
+      <button onclick="shareNum()">↗</button>
+    </div>
+  </div>
+  <div class="stake-row">
+    <button class="stake-btn active" id="stake1" onclick="setStake(1)">×1 (бесплатно)</button>
+    <button class="stake-btn" id="stake5" onclick="setStake(5)">×5</button>
+    <button class="stake-btn" id="stake10" onclick="setStake(10)">×10</button>
+  </div>
+  <div class="spin-row">
+    <button class="spin-btn" id="spinBtn" onclick="spin()">КРУТИТЬ (бесплатно)</button>
+    <button class="auto-btn" id="autoBtn" onclick="toggleAuto()">АВТО</button>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="switchTab('numbers')">
+    <div class="ic">🎰</div><div>Играть</div>
+  </div>
+  <div class="nav-item" onclick="switchTab('phones')">
+    <div class="ic">📱</div><div>Телефоны</div>
+  </div>
+  <div class="nav-item" onclick="switchTab('sims')">
+    <div class="ic">📶</div><div>Симки</div>
+  </div>
+  <div class="nav-item" onclick="openOverlay('tasksOverlay');renderTasks()">
+    <div class="ic">✅</div><div>Задания</div>
+    <div class="nav-badge" id="tasksBadge" style="display:none;">!</div>
+  </div>
+  <div class="nav-item" onclick="openOverlay('menuOverlay')">
+    <div class="ic">⋯</div><div>Ещё</div>
+  </div>
+</div>
+
+<div class="snackbar" id="snackbar"></div>
+<div class="toast" id="toast"></div>
+
+<!-- MENU -->
+<div class="overlay" id="menuOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Ещё</div>
+    <button class="close-btn" onclick="closeOverlay('menuOverlay')">✕</button>
+  </div>
+  <div class="profile-card" onclick="openProfileOverlay()" style="cursor:pointer;">
+    <div class="avatar" id="avatarLetter">И</div>
+    <div class="profile-info">
+      <div class="profile-level">Уровень <span id="lvlText">1</span></div>
+      <div class="profile-exp"><span id="expText">0 из 100</span> опыта</div>
+    </div>
+    <div class="profile-balance">
+      <div class="lbl">Баланс</div>
+      <div class="val" id="balance2">1 000 ₽</div>
+    </div>
+  </div>
+  <div class="cat-grid">
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#2ecc71,#00ff88);--bgic:rgba(46,204,113,.15);" onclick="openPhonesOverlay()">
+      <div class="cat-icon">📱</div>
+      <div class="cat-label">Телефоны</div>
+      <div class="cat-badge" id="phoneBadge" style="display:none;">0</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#ff3b5c,#ff0080);--bgic:rgba(255,59,92,.15);" onclick="openShopOverlay()">
+      <div class="cat-icon">🛒</div>
+      <div class="cat-label">Магазин</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#ffd700,#ff9500);--bgic:rgba(255,215,0,.15);" onclick="openWheelOverlay()">
+      <div class="cat-icon">🎡</div>
+      <div class="cat-label">Колесо</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#00bfff,#8a2be2);--bgic:rgba(0,191,255,.15);" onclick="openWinterOverlay()">
+      <div class="cat-icon">❄️</div>
+      <div class="cat-label">Зимний ивент</div>
+      <div class="cat-badge" id="winterBadge">!</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#2ecc71,#ffd700);--bgic:rgba(46,204,113,.15);" onclick="openPetOverlay()">
+      <div class="cat-icon">🐶</div>
+      <div class="cat-label">Питомец</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#ffd700,#ff0080);--bgic:rgba(255,215,0,.15);" onclick="openOverlay('achOverlay');renderAchievements()">
+      <div class="cat-icon">🏆</div>
+      <div class="cat-label">Достижения</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#00bfff,#8a2be2);--bgic:rgba(0,191,255,.15);" onclick="openCollectionOverlay()">
+      <div class="cat-icon">📚</div>
+      <div class="cat-label">Коллекция</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#8a2be2,#ff9500);--bgic:rgba(138,43,226,.15);" onclick="openBizOverlay()">
+      <div class="cat-icon">💼</div>
+      <div class="cat-label">Бизнес</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#00ff88,#00bfff);--bgic:rgba(0,255,136,.15);" onclick="openOverlay('tasksOverlay');renderTasks()">
+      <div class="cat-icon">✅</div>
+      <div class="cat-label">Задания</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#00bfff,#8a2be2);--bgic:rgba(0,191,255,.15);" onclick="openFriendsOverlay()">
+      <div class="cat-icon">👥</div>
+      <div class="cat-label">Друзья</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#ff0080,#8a2be2);--bgic:rgba(255,0,128,.15);" onclick="openDailyOverlay()">
+      <div class="cat-icon">🎁</div>
+      <div class="cat-label">Подарок</div>
+      <div class="cat-badge" id="dailyBadge">!</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#8a2be2,#00bfff);--bgic:rgba(138,43,226,.15);" onclick="openCountriesOverlay()">
+      <div class="cat-icon">🌍</div>
+      <div class="cat-label">Страны</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#ffd700,#ff0080);--bgic:rgba(255,215,0,.15);" onclick="openSubscribePopup()">
+      <div class="cat-icon">📢</div>
+      <div class="cat-label">Канал</div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div class="overlay" id="profileOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Профиль</div>
+    <button class="close-btn" onclick="closeOverlay('profileOverlay')">✕</button>
+  </div>
+  <div class="profile-card">
+    <div class="avatar" id="profileAvatar">И</div>
+    <div class="profile-info">
+      <div class="profile-level" id="profileName">Игрок</div>
+      <div class="profile-exp">Уровень <span id="profileLvl">1</span></div>
+    </div>
+  </div>
+  <div style="background:rgba(20,20,26,.9);border-radius:16px;padding:16px;margin-bottom:14px;">
+    <div style="font-size:12px;color:#888;margin-bottom:10px;">Статистика</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+      <div>🎰 Круток: <b id="stSpins">0</b></div>
+      <div>📱 Телефонов: <b id="stPhones">0</b></div>
+      <div>📶 Симок: <b id="stSims">0</b></div>
+      <div>💰 Баланс: <b id="stBal">0</b></div>
+    </div>
+  </div>
+  <div style="background:rgba(20,20,26,.9);border-radius:16px;padding:16px;margin-bottom:14px;">
+    <div style="font-size:12px;color:#888;margin-bottom:10px;">Баннер профиля</div>
+    <div class="banner-grid" id="bannerGrid"></div>
+  </div>
+  <button class="popup-btn" onclick="changeNick()">Изменить ник</button>
+</div>
+
+<!-- PHONES -->
+<div class="overlay" id="phonesOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Мои телефоны</div>
+    <button class="close-btn" onclick="closeOverlay('phonesOverlay')">✕</button>
+  </div>
+  <div class="phone-grid" id="phonesGrid"></div>
+</div>
+
+<!-- SIMS -->
+<div class="overlay" id="simsOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Мои симки</div>
+    <button class="close-btn" onclick="closeOverlay('simsOverlay')">✕</button>
+  </div>
+  <div id="simsList"></div>
+</div>
+
+<!-- SHOP -->
+<div class="overlay" id="shopOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Магазин</div>
+    <button class="close-btn" onclick="closeOverlay('shopOverlay')">✕</button>
+  </div>
+  <div class="boxes-grid" id="boxesGrid"></div>
+</div>
+
+<!-- CASE -->
+<div class="overlay" id="caseOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title" id="caseTitle">Коробка</div>
+    <button class="close-btn" onclick="closeOverlay('caseOverlay')">✕</button>
+  </div>
+  <div class="case-strip-wrap">
+    <div class="case-pointer"></div>
+    <div class="case-strip" id="caseStrip"></div>
+  </div>
+  <button class="popup-btn" id="caseOpenBtn" onclick="openCase()">Открыть</button>
+</div>
+
+<!-- WHEEL -->
+<div class="overlay" id="wheelOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Колесо фортуны</div>
+    <button class="close-btn" onclick="closeOverlay('wheelOverlay')">✕</button>
+  </div>
+  <div class="wheel-outer">
+    <div class="wheel-pointer"></div>
+    <div class="wheel" id="wheel"></div>
+    <div class="wheel-center">🎁</div>
+  </div>
+  <button class="popup-btn" onclick="spinWheel()" id="wheelBtn">Крутить бесплатно</button>
+</div>
+
+<!-- WINTER -->
+<div class="overlay" id="winterOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">❄️ Зимний ивент</div>
+    <button class="close-btn" onclick="closeOverlay('winterOverlay')">✕</button>
+  </div>
+  <div class="winter-header">
+    <div class="winter-snow">❄️</div>
+    <div class="winter-title">Зимний сбор</div>
+    <div class="winter-sub">Собирай снежинки, обменивай на призы!</div>
+  </div>
+  <div class="winter-rules">
+    <div class="rules-title">📖 Как играть</div>
+    <div class="rule"><span class="rule-num">1</span><span><b>5000 круток</b> = <b>1 снежинка</b> ❄️</span></div>
+    <div class="rule"><span class="rule-num">2</span><span><b>10 снежинок</b> = <b>1 снежок</b> ⛄</span></div>
+    <div class="rule"><span class="rule-num">3</span><span>Обменивай снежки на призы ⬇️</span></div>
+    <div class="rule"><span class="rule-num">4</span><span>Чем больше крутишь — тем больше призов!</span></div>
+  </div>
+  <div class="winter-progress">
+    <div class="winter-progress-row">
+      <div class="prog-item">
+        <div class="prog-icon">❄️</div>
+        <div class="prog-val"><span id="snowCount">0</span> / 10</div>
+        <div class="prog-lbl">Снежинок</div>
+      </div>
+      <div class="prog-arrow">→</div>
+      <div class="prog-item">
+        <div class="prog-icon">⛄</div>
+        <div class="prog-val"><span id="snowballs">0</span></div>
+        <div class="prog-lbl">Снежков</div>
+      </div>
+    </div>
+    <div class="winter-progress-bar">
+      <div class="winter-progress-fill" id="snowFill" style="width:0%"></div>
+    </div>
+    <div class="prog-hint" id="snowHint">Ещё 5000 круток до снежинки!</div>
+  </div>
+  <div class="winter-rewards-title">🎁 Призы</div>
+  <div class="winter-rewards" id="winterRewards"></div>
+</div>
+
+<!-- PET -->
+<div class="overlay" id="petOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">🐶 Питомец</div>
+    <button class="close-btn" onclick="closeOverlay('petOverlay')">✕</button>
+  </div>
+  <div class="pet-container">
+    <div class="pet-emoji" id="petEmoji">🐶</div>
+    <div class="pet-name" id="petName">Бобик</div>
+    <div class="pet-level">Уровень <span id="petLevel">1</span></div>
+    <div class="pet-exp-bar"><div class="pet-exp-fill" id="petExpFill" style="width:0%"></div></div>
+    <div class="pet-exp-text"><span id="petExp">0</span> / <span id="petExpMax">100</span> опыта</div>
+    <div class="pet-stats">
+      <div class="pet-stat"><div class="ic">🍖</div><div class="val" id="petFood">50</div><div class="lbl">Еда</div></div>
+      <div class="pet-stat"><div class="ic">😊</div><div class="val" id="petHappy">50</div><div class="lbl">Радость</div></div>
+      <div class="pet-stat"><div class="ic">⚡</div><div class="val" id="petEnergy">50</div><div class="lbl">Энергия</div></div>
+    </div>
+    <div class="pet-actions">
+      <button class="pet-feed" onclick="petFeed()">🍖 Покормить</button>
+      <button class="pet-play" onclick="petPlay()">🎾 Поиграть</button>
+      <button class="pet-sleep" onclick="petSleep()">💤 Спать</button>
+    </div>
+  </div>
+  <div class="popup-text">Каждые 10 уровней питомец даёт бонус к доходу (+5%)</div>
+</div>
+
+<!-- ACHIEVEMENTS -->
+<div class="overlay" id="achOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">🏆 Достижения</div>
+    <button class="close-btn" onclick="closeOverlay('achOverlay')">✕</button>
+  </div>
+  <div class="ach-grid" id="achGrid"></div>
+</div>
+
+<!-- COLLECTION -->
+<div class="overlay" id="collOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">📚 Коллекция номеров</div>
+    <button class="close-btn" onclick="closeOverlay('collOverlay')">✕</button>
+  </div>
+  <div class="popup-text">Все выбитые номера сохраняются здесь</div>
+  <div class="coll-list" id="collList"></div>
+</div>
+
+<!-- BIZ -->
+<div class="overlay" id="bizOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">💼 Бизнес</div>
+    <button class="close-btn" onclick="closeOverlay('bizOverlay')">✕</button>
+  </div>
+  <div class="popup-text">Покупай бизнес — он даёт пассивный доход каждый час</div>
+  <div id="bizList"></div>
+</div>
+
+<!-- FRIENDS -->
+<div class="overlay" id="friendsOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Друзья</div>
+    <button class="close-btn" onclick="closeOverlay('friendsOverlay')">✕</button>
+  </div>
+  <div class="popup-text">Пригласи 5 друзей и получи <b style="color:#8a2be2;">Абсолютный номер</b>!</div>
+  <div class="ref-link" id="refLink">https://t.me/AppNomerokBot?start=ref</div>
+  <button class="popup-btn" onclick="copyRef()">Скопировать ссылку</button>
+  <div class="popup-text" style="margin-top:16px;">Приглашено: <b id="refCount">0</b> / 5</div>
+</div>
+
+<!-- COUNTRIES -->
+<div class="overlay" id="countriesOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Страна номера</div>
+    <button class="close-btn" onclick="closeOverlay('countriesOverlay')">✕</button>
+  </div>
+  <div class="popup-text">У каждой страны свой кошелёк</div>
+  <div class="country-grid" id="countryGrid"></div>
+</div>
+
+<!-- DAILY -->
+<div class="overlay" id="dailyOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">🎁 Ежедневный подарок</div>
+    <button class="close-btn" onclick="closeOverlay('dailyOverlay')">✕</button>
+  </div>
+  <div class="popup-text" id="dailyText">Заходи каждый день и получай бонус!</div>
+  <button class="popup-btn" onclick="claimDaily()" id="dailyBtn">Забрать</button>
+</div>
+
+<!-- TASKS -->
+<div class="overlay" id="tasksOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">✅ Ежедневные задания</div>
+    <button class="close-btn" onclick="closeOverlay('tasksOverlay')">✕</button>
+  </div>
+  <div class="popup-text">Выполняй задания и получай награды!</div>
+  <div id="tasksList"></div>
+</div>
+
+<!-- SUBSCRIBE -->
+<div class="popup" id="subscribePopup">
+  <div class="popup-handle"></div>
+  <div class="popup-title">📢 Подпишись на канал</div>
+  <div class="popup-text">Чтобы крутить номера, подпишись на <b>@AppNomerokKanal</b>!</div>
+  <button class="popup-btn" onclick="openChannel()">📢 Открыть канал</button>
+  <button class="popup-btn green" onclick="confirmSubscribe()">✅ Я подписался</button>
+</div>
+
+<!-- DEMO (СКРЫТО) -->
+<div class="popup" id="demoPopup">
+  <div class="popup-handle"></div>
+  <div class="popup-title">🎬 Демо-режим</div>
+  <div class="popup-text">Выбери номер для съёмки.</div>
+  <div id="demoList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
+  <button class="popup-btn red" onclick="disableDemo()">❌ Выключить демо</button>
+</div>
+
+<script>
+// ================= TELEGRAM USER =================
+let tgUser = null;
+try {
+  if (window.Telegram && window.Telegram.WebApp){
+    const u = window.Telegram.WebApp.initDataUnsafe?.user;
+    if (u) tgUser = u;
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand();
+  }
+} catch(e){}
+
+// ================= STATE =================
+const state = {
+  balance: 1000,
+  level: 1,
+  exp: 0,
+  expMax: 100,
+  clover: 0,
+  country: 'ru',
+  stake: 1,
+  spins: 0,
+  phones: [],
+  sims: [],
+  dailyStreak: 0,
+  lastDaily: 0,
+  refCount: 0,
+  currentNumber: null,
+  userName: tgUser?.first_name || 'Игрок',
+  userPhoto: tgUser?.photo_url || null,
+  banner: 0,
+  soundOn: true,
+  subscribed: false,
+  subscribedBoostUntil: 0,
+  boosts: { luck: 0, income: 0, fastSpin: 0, autoSpin: 0 },
+  tasks: { date: null, spins: 0, boxes: 0, sold: 0, money: 0, claimed: [] },
+  winter: { snowflakes: 0, snowballs: 0, claimed: [], totalSpins: 0 },
+  demoMode: false,
+  demoNumber: null,
+  demoClicks: 0,
+  // КОЛЛЕКЦИЯ
+  collection: [],
+  // ПИТОМЕЦ
+  pet: { name: 'Бобик', level: 1, exp: 0, expMax: 100, food: 50, happy: 50, energy: 50 },
+  // ДОСТИЖЕНИЯ
+  achievements: [],
+  // БИЗНЕС
+  business: [],
+  // ДЖЕКПОТ
+  lastJackpotSpin: 0,
+};
+
+function save(){
+  try { localStorage.setItem('nom_state_v7', JSON.stringify(state)); } catch(e){}
+}
+function load(){
+  try {
+    const s = localStorage.getItem('nom_state_v7');
+    if (s){
+      const p = JSON.parse(s);
+      Object.assign(state, p);
+      if (!Array.isArray(state.phones)) state.phones = [];
+      if (!Array.isArray(state.sims)) state.sims = [];
+      if (!Array.isArray(state.collection)) state.collection = [];
+      if (!Array.isArray(state.achievements)) state.achievements = [];
+      if (!Array.isArray(state.business)) state.business = [];
+      if (!state.boosts) state.boosts = { luck:0, income:0, fastSpin:0, autoSpin:0 };
+      if (!state.tasks) state.tasks = { date:null, spins:0, boxes:0, sold:0, money:0, claimed:[] };
+      if (!Array.isArray(state.tasks.claimed)) state.tasks.claimed = [];
+      if (!state.winter) state.winter = { snowflakes:0, snowballs:0, claimed:[], totalSpins:0 };
+      if (!Array.isArray(state.winter.claimed)) state.winter.claimed = [];
+      if (!state.pet) state.pet = { name:'Бобик', level:1, exp:0, expMax:100, food:50, happy:50, energy:50 };
+    }
+  } catch(e){}
+}
+load();
+
+// ================= COUNTRIES =================
+const COUNTRIES = {
+  ru: { name:'Россия',     flag:'🇷🇺', code:'+7',   ops:['МТС','Билайн','Мегафон','Т2'],       gen:()=>`+7 (${['9','8','7','6','5','4','3'][rnd(7)]}${digits(2)}) ${digits(3)}-${digits(2)}-${digits(2)}` },
+  by: { name:'Беларусь',   flag:'🇧🇾', code:'+375', ops:['МТС','A1','life:)'],                 gen:()=>`+375 (${digits(2)}) ${digits(3)}-${digits(2)}-${digits(2)}` },
+  kz: { name:'Казахстан',  flag:'🇰🇿', code:'+7',   ops:['Beeline','Activ','Tele2'],           gen:()=>`+7 (7${digits(2)}) ${digits(3)}-${digits(2)}-${digits(2)}` },
+  ua: { name:'Украина',    flag:'🇺🇦', code:'+380', ops:['Киевстар','Vodafone','lifecell'],    gen:()=>`+380 (${digits(2)}) ${digits(3)}-${digits(2)}-${digits(2)}` },
+  ae: { name:'ОАЭ',        flag:'🇦🇪', code:'+971', ops:['Etisalat','du'],                     gen:()=>`+971 (${digits(2)}) ${digits(3)}-${digits(4)}` },
+  de: { name:'Германия',   flag:'🇩🇪', code:'+49',  ops:['Telekom','Vodafone','O2'],           gen:()=>`+49 (${digits(3)}) ${digits(7)}` },
+  am: { name:'Армения',    flag:'🇦🇲', code:'+374', ops:['VivaCell','Beeline','Ucom'],         gen:()=>`+374 (${digits(2)}) ${digits(3)}-${digits(3)}` },
+  ge: { name:'Грузия',     flag:'🇬🇪', code:'+995', ops:['Magti','Silknet','Beeline'],         gen:()=>`+995 (${digits(3)}) ${digits(3)}-${digits(3)}` },
+  az: { name:'Азербайджан',flag:'🇦🇿', code:'+994', ops:['Azercell','Bakcell','Nar'],          gen:()=>`+994 (${digits(2)}) ${digits(3)}-${digits(2)}-${digits(2)}` },
+  uz: { name:'Узбекистан', flag:'🇺🇿', code:'+998', ops:['Beeline','Ucell','UMS'],             gen:()=>`+998 (${digits(2)}) ${digits(3)}-${digits(2)}-${digits(2)}` },
+  us: { name:'США',        flag:'🇺🇸', code:'+1',   ops:['AT&T','Verizon','T-Mobile'],         gen:()=>`+1 (${digits(3)}) ${digits(3)}-${digits(4)}` },
+  jp: { name:'Япония',     flag:'🇯🇵', code:'+81',  ops:['NTT','SoftBank','au'],               gen:()=>`+81 (${digits(2)}) ${digits(4)}-${digits(4)}` },
+  cn: { name:'Китай',      flag:'🇨🇳', code:'+86',  ops:['China Mobile','Unicom','Telecom'],   gen:()=>`+86 (${digits(3)}) ${digits(4)}-${digits(4)}` },
+  tr: { name:'Турция',     flag:'🇹🇷', code:'+90',  ops:['Turkcell','Vodafone','Türk Telekom'],gen:()=>`+90 (${digits(3)}) ${digits(3)}-${digits(2)}-${digits(2)}` },
+  in: { name:'Индия',      flag:'🇮🇳', code:'+91',  ops:['Airtel','Jio','Vi'],                 gen:()=>`+91 (${digits(2)}) ${digits(4)}-${digits(4)}` },
+  br: { name:'Бразилия',   flag:'🇧🇷', code:'+55',  ops:['Vivo','Claro','TIM'],                gen:()=>`+55 (${digits(2)}) ${digits(4)}-${digits(4)}` },
+};
+
+// ================= RARITIES =================
+const RARITIES = [
+  { id:'common',    name:'Обычный',     color:'#888888', weight:65,  mult:1,    dots:1 },
+  { id:'rare',      name:'Редкий',      color:'#3b82f6', weight:24,  mult:3,    dots:2 },
+  { id:'epic',      name:'Эпический',   color:'#a855f7', weight:8,   mult:15,   dots:3 },
+  { id:'mythic',    name:'Мифический',  color:'#ef4444', weight:2.5, mult:100,  dots:4 },
+  { id:'legendary', name:'Легендарный', color:'#ffd700', weight:0.3, mult:1000, dots:5 },
+  { id:'absolute',  name:'АБСОЛЮТНЫЙ',  color:'#ff00ff', weight:0.05,mult:5000, dots:6 },
+];
+
+// ================= PHONES =================
+const PHONES = [
+  { name:'Nokia 3310',          icon:'📞', rarity:'common',    price:500,     model:'feature' },
+  { name:'Siemens A50',         icon:'📞', rarity:'common',    price:700,     model:'feature' },
+  { name:'Motorola C115',       icon:'📞', rarity:'common',    price:900,     model:'feature' },
+  { name:'Samsung SGH',         icon:'📞', rarity:'rare',      price:2500,    model:'feature' },
+  { name:'Sony Ericsson',       icon:'📞', rarity:'rare',      price:3000,    model:'feature' },
+  { name:'Nokia N95',           icon:'📞', rarity:'rare',      price:4000,    model:'feature' },
+  { name:'iPhone 4',            icon:'📱', rarity:'rare',      price:5000,    model:'smart' },
+  { name:'iPhone 5S',           icon:'📱', rarity:'rare',      price:6000,    model:'smart' },
+  { name:'iPhone 6',            icon:'📱', rarity:'epic',      price:12000,   model:'smart' },
+  { name:'iPhone 7',            icon:'📱', rarity:'epic',      price:15000,   model:'smart' },
+  { name:'iPhone 8 Plus',       icon:'📱', rarity:'epic',      price:18000,   model:'smart' },
+  { name:'iPhone X',            icon:'📱', rarity:'epic',      price:25000,   model:'smart' },
+  { name:'iPhone XR',           icon:'📱', rarity:'epic',      price:22000,   model:'smart' },
+  { name:'iPhone 11',           icon:'📱', rarity:'epic',      price:28000,   model:'smart' },
+  { name:'iPhone 12',           icon:'📱', rarity:'epic',      price:35000,   model:'smart' },
+  { name:'iPhone 13',           icon:'📱', rarity:'epic',      price:45000,   model:'smart' },
+  { name:'Samsung S8',          icon:'📱', rarity:'epic',      price:15000,   model:'smart' },
+  { name:'Xiaomi Mi 9',         icon:'📱', rarity:'epic',      price:18000,   model:'smart' },
+  { name:'Google Pixel 3',      icon:'📱', rarity:'epic',      price:20000,   model:'smart' },
+  { name:'Huawei P30',          icon:'📱', rarity:'epic',      price:22000,   model:'smart' },
+  { name:'Samsung Fold',        icon:'📱', rarity:'epic',      price:30000,   model:'fold' },
+  { name:'iPhone 14 Pro',       icon:'📱', rarity:'mythic',    price:80000,   model:'smart' },
+  { name:'iPhone 15 Pro',       icon:'📱', rarity:'mythic',    price:100000,  model:'smart' },
+  { name:'iPhone 15 Pro Max',   icon:'📱', rarity:'mythic',    price:120000,  model:'smart' },
+  { name:'iPhone 16 Pro',       icon:'📱', rarity:'mythic',    price:130000,  model:'smart' },
+  { name:'iPhone 16 Pro Max',   icon:'📱', rarity:'mythic',    price:150000,  model:'smart' },
+  { name:'Samsung S23 Ultra',   icon:'📱', rarity:'mythic',    price:90000,   model:'smart' },
+  { name:'Samsung S24 Ultra',   icon:'📱', rarity:'mythic',    price:130000,  model:'smart' },
+  { name:'OnePlus 11',          icon:'📱', rarity:'mythic',    price:70000,   model:'smart' },
+  { name:'Google Pixel 7',      icon:'📱', rarity:'mythic',    price:75000,   model:'smart' },
+  { name:'Google Pixel 8 Pro',  icon:'📱', rarity:'mythic',    price:110000,  model:'smart' },
+  { name:'Asus ROG Phone',      icon:'📱', rarity:'mythic',    price:95000,   model:'smart' },
+  { name:'Oppo Find X6',        icon:'📱', rarity:'mythic',    price:85000,   model:'smart' },
+  { name:'iPhone 17',           icon:'📱', rarity:'legendary', price:180000,  model:'smart' },
+  { name:'iPhone 17 Pro',       icon:'📱', rarity:'legendary', price:220000,  model:'smart' },
+  { name:'iPhone 17 Pro Max',   icon:'📱', rarity:'legendary', price:280000,  model:'smart' },
+  { name:'Vertu Signature',     icon:'💎', rarity:'legendary', price:500000,  model:'lux' },
+  { name:'Vertu Diamond',       icon:'💎', rarity:'absolute',  price:1500000, model:'lux' },
+  { name:'Vertu Constellation', icon:'💎', rarity:'absolute',  price:2000000, model:'lux' },
+  { name:'iPhone 17 Pro Max Ultimate', icon:'💎', rarity:'absolute', price:5000000, model:'lux' },
+  { name:'iPhone 17 Titanium Edition', icon:'💎', rarity:'absolute', price:10000000, model:'lux' },
+];
+
+// ================= BOXES =================
+const BOXES = [
+  { id:'common',    name:'Обычная',     emoji:'📦', price:500,     color:'#888888', chances:{ common:.92, rare:.08 } },
+  { id:'rare',      name:'Редкая',      emoji:'📦', price:2000,    color:'#3b82f6', chances:{ common:.60, rare:.32, epic:.08 } },
+  { id:'epic',      name:'Эпическая',   emoji:'📦', price:8000,    color:'#a855f7', chances:{ rare:.50, epic:.40, mythic:.10 } },
+  { id:'mythic',    name:'Мифическая',  emoji:'📦', price:30000,   color:'#ef4444', chances:{ rare:.30, epic:.50, mythic:.18, legendary:.02 } },
+  { id:'legendary', name:'Легендарная', emoji:'📦', price:150000,  color:'#ffd700', chances:{ epic:.40, mythic:.50, legendary:.10 } },
+  { id:'absolute',  name:'Абсолютная',  emoji:'💎', price:1000000, color:'#ff00ff', chances:{ legendary:.80, absolute:.20 } },
+];
+
+// ================= BANNERS =================
+const BANNERS = [
+  'linear-gradient(135deg,#2ecc71,#00bfff)',
+  'linear-gradient(135deg,#ff0080,#8a2be2)',
+  'linear-gradient(135deg,#ffd700,#ff9500)',
+  'linear-gradient(135deg,#00bfff,#8a2be2)',
+  'linear-gradient(135deg,#ff3b5c,#ff0080)',
+  'linear-gradient(135deg,#000000,#434343)',
+  'linear-gradient(135deg,#1e3c72,#2a5298)',
+  'linear-gradient(135deg,#4b134f,#c94b4b)',
+  'linear-gradient(135deg,#0f2027,#2c5364)',
+  'linear-gradient(135deg,#f12711,#f5af19)',
+];
+
+// ================= TASKS =================
+const TASK_TEMPLATES = [
+  { id:'spins10',  icon:'🎰', name:'Выкрути 10 номеров',     target:10,  reward:5000 },
+  { id:'spins50',  icon:'🎰', name:'Выкрути 50 номеров',     target:50,  reward:25000 },
+  { id:'boxes3',   icon:'📦', name:'Открой 3 коробки',        target:3,   reward:3000 },
+  { id:'boxes10',  icon:'📦', name:'Открой 10 коробок',       target:10,  reward:15000 },
+  { id:'sold1',    icon:'💸', name:'Продай 1 телефон',        target:1,   reward:2000 },
+  { id:'sold5',    icon:'💸', name:'Продай 5 телефонов',      target:5,   reward:12000 },
+  { id:'money50k', icon:'💰', name:'Заработай 50 000 ₽',      target:50000, reward:10000 },
+];
+
+// ================= WINTER =================
+const WINTER_REWARDS = [
+  { id:'snow1',   icon:'❄️', name:'5 000 ₽',       snowballs:1,  type:'money', value:5000 },
+  { id:'snow3',   icon:'💰', name:'20 000 ₽',      snowballs:3,  type:'money', value:20000 },
+  { id:'snow5',   icon:'✨', name:'100 000 ₽',     snowballs:5,  type:'money', value:100000 },
+  { id:'snow10',  icon:'💎', name:'Абсолютный номер', snowballs:10, type:'absolute' },
+];
+
+// ================= ACHIEVEMENTS =================
+const ACHIEVEMENTS = [
+  { id:'spin1',     icon:'🎰', name:'Первый шаг',      desc:'Выкрути 1 номер',      target:1,     reward:500 },
+  { id:'spin100',   icon:'🎰', name:'Крутила',          desc:'Выкрути 100 номеров',  target:100,   reward:5000 },
+  { id:'spin1000',  icon:'🎰', name:'Крутила-мастер',   desc:'Выкрути 1000 номеров', target:1000,  reward:50000 },
+  { id:'spin5000',  icon:'🎰', name:'Крутила-легенда',  desc:'Выкрути 5000 номеров', target:5000,  reward:200000 },
+  { id:'phone1',    icon:'📱', name:'Первый телефон',    desc:'Открой 1 телефон',     target:1,     reward:1000 },
+  { id:'phone10',   icon:'📱', name:'Коллекционер',      desc:'10 телефонов',         target:10,    reward:10000 },
+  { id:'phone50',   icon:'📱', name:'Магазин техники',   desc:'50 телефонов',         target:50,    reward:100000 },
+  { id:'sim1',      icon:'📶', name:'Первая симка',      desc:'Сохрани 1 симку',      target:1,     reward:1000 },
+  { id:'sim10',     icon:'📶', name:'Оператор',          desc:'10 симок',             target:10,    reward:10000 },
+  { id:'sold1',     icon:'💸', name:'Продавец',          desc:'Продай 1 телефон',     target:1,     reward:1000 },
+  { id:'sold10',    icon:'💸', name:'Бизнесмен',         desc:'Продай 10 телефонов',  target:10,    reward:20000 },
+  { id:'level5',    icon:'⭐', name:'Пятёрка',           desc:'Достигни 5 уровня',    target:5,     reward:5000 },
+  { id:'level10',   icon:'⭐', name:'Десятка',           desc:'Достигни 10 уровня',   target:10,    reward:20000 },
+  { id:'level25',   icon:'⭐', name:'Мастер',            desc:'Достигни 25 уровня',   target:25,    reward:100000 },
+  { id:'bal100k',   icon:'💰', name:'Сто тысяч',         desc:'Заработай 100 000 ₽',  target:100000,reward:10000 },
+  { id:'bal1m',     icon:'💰', name:'Миллионер',         desc:'Заработай 1 000 000 ₽',target:1000000,reward:100000 },
+  { id:'bal10m',    icon:'💰', name:'Мультимиллионер',   desc:'Заработай 10 000 000 ₽',target:10000000,reward:1000000 },
+  { id:'legendary1',icon:'✨', name:'Легенда',           desc:'Выбей 1 легендарный',  target:1,     reward:100000 },
+  { id:'absolute1', icon:'💎', name:'Абсолют',           desc:'Выбей 1 абсолютный',   target:1,     reward:1000000 },
+  { id:'pet10',     icon:'🐶', name:'Дружок',            desc:'Прокачай питомца до 10',target:10,   reward:50000 },
+];
+
+// ================= BUSINESS =================
+const BUSINESS_TYPES = [
+  { id:'kiosk',   icon:'🏪', name:'Киоск',        price:10000,   incomePerHour:500 },
+  { id:'shop',    icon:'🏬', name:'Магазин',      price:100000,  incomePerHour:5000 },
+  { id:'factory', icon:'🏭', name:'Завод',        price:1000000, incomePerHour:50000 },
+  { id:'bank',    icon:'🏦', name:'Банк',         price:10000000,incomePerHour:500000 },
+  { id:'oil',     icon:'🛢️', name:'Нефтевышка',   price:100000000,incomePerHour:5000000 },
+];
+
+// ================= HELPERS =================
+function rnd(n){ return Math.floor(Math.random()*n); }
+function digits(n){ let s=''; for(let i=0;i<n;i++) s+=rnd(10); return s; }
+function fmt(n){ return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' '); }
+function expForLevel(l){ return Math.floor(100 * Math.pow(l, 1.5)); }
+function getRarityById(id){ return RARITIES.find(r=>r.id===id) || RARITIES[0]; }
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+
+// ================= SOUNDS =================
+let audioCtx = null;
+function getAudioCtx(){
+  if (!audioCtx){ try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
+  return audioCtx;
+}
+function playTick(){
+  if (!state.soundOn) return;
+  const ctx = getAudioCtx(); if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(180, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(90, ctx.currentTime + 0.04);
+  gain.gain.setValueAtTime(0.12, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(); osc.stop(ctx.currentTime + 0.06);
+}
+function playWin(){
+  if (!state.soundOn) return;
+  const ctx = getAudioCtx(); if (!ctx) return;
+  const notes = [523, 659, 784, 1047];
+  notes.forEach((freq, i)=>{
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + i*0.1);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime + i*0.1);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.1 + 0.3);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(ctx.currentTime + i*0.1);
+    osc.stop(ctx.currentTime + i*0.1 + 0.3);
+  });
+}
+function playCash(){
+  if (!state.soundOn) return;
+  const ctx = getAudioCtx(); if (!ctx) return;
+  const notes = [1047, 1319];
+  notes.forEach((freq, i)=>{
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + i*0.08);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime + i*0.08);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.08 + 0.2);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(ctx.currentTime + i*0.08);
+    osc.stop(ctx.currentTime + i*0.08 + 0.2);
+  });
+}
+function playAbsolute(){
+  if (!state.soundOn) return;
+  const ctx = getAudioCtx(); if (!ctx) return;
+  const notes = [523, 659, 784, 1047, 1319, 1568];
+  notes.forEach((freq, i)=>{
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + i*0.08);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime + i*0.08);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.08 + 0.4);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(ctx.currentTime + i*0.08);
+    osc.stop(ctx.currentTime + i*0.08 + 0.4);
+  });
+}
+// НОВЫЙ ПРИЯТНЫЙ ЗВУК (продажа/редкий)
+function playSell(){
+  if (!state.soundOn) return;
+  const ctx = getAudioCtx(); if (!ctx) return;
+  const notes = [784, 1047, 1319, 1568];
+  notes.forEach((freq, i)=>{
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + i*0.06);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime + i*0.06);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.06 + 0.25);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(ctx.currentTime + i*0.06);
+    osc.stop(ctx.currentTime + i*0.06 + 0.25);
+  });
+}
+// ДЖЕКПОТ
+function playJackpot(){
+  if (!state.soundOn) return;
+  const ctx = getAudioCtx(); if (!ctx) return;
+  const notes = [523, 659, 784, 1047, 1319, 1568, 2093];
+  notes.forEach((freq, i)=>{
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + i*0.07);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime + i*0.07);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.07 + 0.35);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(ctx.currentTime + i*0.07);
+    osc.stop(ctx.currentTime + i*0.07 + 0.35);
+  });
+}
+
+// ================= SNOW =================
+(function(){
+  const c = document.getElementById('snow');
+  for (let i=0;i<55;i++){
+    const s = document.createElement('div');
+    s.className = 'snowflake';
+    const size = 1 + Math.random()*2.5;
+    s.style.width = size+'px';
+    s.style.height = size+'px';
+    s.style.left = Math.random()*100+'%';
+    s.style.animationDuration = (5 + Math.random()*8)+'s';
+    s.style.animationDelay = (-Math.random()*10)+'s';
+    s.style.opacity = 0.3 + Math.random()*0.5;
+    c.appendChild(s);
+  }
+})();
+
+// ================= PHONE MODEL =================
+function renderPhoneModel(rarityId, modelType){
+  const colors = {
+    common:    ['#555','#2a2a2a'],
+    rare:      ['#3b82f6','#1e3a8a'],
+    epic:      ['#a855f7','#4c1d95'],
+    mythic:    ['#ef4444','#7f1d1d'],
+    legendary: ['#ffd700','#b8860b'],
+    absolute:  ['#ff00ff','#8a008a'],
+  };
+  const c = colors[rarityId] || colors.common;
+  const cls = 'phone-model ' + (modelType || 'smart');
+  let inner = '';
+  if (modelType === 'feature'){
+    inner = `<div class="antenna"></div><div class="screen"></div><div class="keys"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>`;
+  } else if (modelType === 'lux'){
+    inner = `<div class="screen"></div><div class="notch"></div><div class="btn-home"></div>`;
+  } else if (modelType === 'fold'){
+    inner = `<div class="screen"></div><div class="notch"></div>`;
+  } else {
+    inner = `<div class="screen"></div><div class="notch"></div><div class="btn-home"></div><div class="btn-side"></div><div class="btn-side b2"></div>`;
+  }
+  return `<div class="${cls}" style="--c1:${c[0]};--c2:${c[1]}">${inner}</div>`;
+}
+  // ================= BEAUTY SCORE =================
+function evaluateNumber(number, countryCode){
+  const digitsOnly = number.replace(/\D/g,'');
+  const cc = COUNTRIES[countryCode].code;
+  const ccDigits = cc.replace(/\D/g,'');
+  let local = digitsOnly;
+  if (local.startsWith(ccDigits)) local = local.slice(ccDigits.length);
+  if (countryCode==='kz' && local.startsWith('7')) local = local.slice(1);
+
+  const reasons = [];
+  let score = 0;
+
+  let maxRepeat = 0, maxRepeatDigit = null;
+  for (let d=0; d<=9; d++){
+    const re = new RegExp(d+'+','g');
+    const matches = local.match(re) || [];
+    matches.forEach(m => {
+      if (m.length > maxRepeat){ maxRepeat = m.length; maxRepeatDigit = d; }
+    });
+  }
+
+  if (maxRepeat >= 3){
+    const bonus = maxRepeat === 3 ? 2 : maxRepeat === 4 ? 5 : maxRepeat === 5 ? 20 : maxRepeat === 6 ? 50 : maxRepeat === 7 ? 100 : 200;
+    reasons.push({ text:`${maxRepeat}×${maxRepeatDigit} подряд`, mult: bonus });
+    score += bonus;
+  }
+
+  const tail3 = local.slice(-3);
+  const tail4 = local.slice(-4);
+  if (['777','888','999','000','111','222','333','444','555','666'].includes(tail3)){
+    reasons.push({ text:`топовое окончание ${tail3}`, mult: 4 }); score += 4;
+  }
+  if (tail4 === tail4[0].repeat(4)){
+    reasons.push({ text:`окончание ${tail4}`, mult: 8 }); score += 8;
+  }
+
+  const head3 = local.slice(0,3);
+  if (head3 === head3[0].repeat(3)){
+    reasons.push({ text:`ровное начало ${head3}`, mult: 3 }); score += 3;
+  }
+
+  if (local.length >= 5){
+    const rev = local.split('').reverse().join('');
+    if (rev === local){ reasons.push({ text:'зеркальный номер', mult: 10 }); score += 10; }
+  }
+
+  let incr = true, decr = true;
+  for (let i=1;i<local.length;i++){
+    if (+local[i] !== +local[i-1]+1) incr = false;
+    if (+local[i] !== +local[i-1]-1) decr = false;
+  }
+  if (incr && local.length >= 5){ reasons.push({ text:'возрастающая последовательность', mult: 6 }); score += 6; }
+  if (decr && local.length >= 5){ reasons.push({ text:'убывающая последовательность', mult: 6 }); score += 6; }
+
+  if (/^(\d{2})\1/.test(local) && reasons.length === 0){
+    reasons.push({ text:'симметричные пары', mult: 2 }); score += 2;
+  }
+
+  let rarity;
+  if (maxRepeat >= 6)      rarity = RARITIES[5];
+  else if (maxRepeat >= 5) rarity = RARITIES[4];
+  else if (maxRepeat >= 4 && score >= 10) rarity = RARITIES[3];
+  else if (maxRepeat >= 4 || score >= 8)  rarity = RARITIES[2];
+  else if (maxRepeat >= 3 || score >= 3)  rarity = RARITIES[1];
+  else rarity = RARITIES[0];
+
+  return { rarity, score, reasons, maxRepeat };
+}
+
+// ================= PICK RARITY (с бустом подписки) =================
+function pickRarityWithBoost(){
+  let weights = { common: 65, rare: 24, epic: 8, mythic: 2.5, legendary: 0.3, absolute: 0.05 };
+  if (state.subscribed){
+    weights.epic *= 1.5; weights.mythic *= 1.5;
+    weights.legendary *= 1.5; weights.absolute *= 1.5;
+  }
+  const total = Object.values(weights).reduce((s,v)=>s+v,0);
+  let r = Math.random() * total;
+  for (const [id, w] of Object.entries(weights)){
+    r -= w;
+    if (r <= 0) return getRarityById(id);
+  }
+  return RARITIES[0];
+}
+
+// ================= GENERATE NUMBER =================
+function generateNumberByRarity(countryCode, rarityId){
+  const country = COUNTRIES[countryCode];
+  if (rarityId === 'absolute'){
+    const d = rnd(10);
+    return { number: `+7 (${d}${d}${d}) ${d}${d}${d}-${d}${d}-${d}${d}`, reasons: [
+      { text:`${d}×7 подряд`, mult: 200 },
+      { text:`абсолютная редкость`, mult: 100 }
+    ]};
+  }
+  if (rarityId === 'legendary'){
+    const d = rnd(10);
+    const variants = [
+      `+7 (${digits(3)}) ${d}${d}${d}${d}${d}-${digits(2)}-${digits(2)}`,
+      `+7 (${d}${d}${d}) ${d}${d}${digits(3)}-${digits(2)}-${digits(2)}`,
+      `+7 (${digits(3)}) ${digits(3)}-${digits(2)}-${d}${d}${d}${d}${d}`,
+      `+7 (${d}${d}${d}) ${d}${d}777-77-77`,
+    ];
+    return { number: variants[rnd(variants.length)], reasons: [
+      { text:`5×${d} подряд`, mult: 20 },
+      { text:`легендарная редкость`, mult: 50 }
+    ]};
+  }
+  return { number: country.gen(), reasons: [] };
+}
+  // ================= UI UPDATE =================
+function updateUI(){
+  document.getElementById('balance').textContent = fmt(state.balance)+' ₽';
+  document.getElementById('balance2').textContent = fmt(state.balance)+' ₽';
+  document.getElementById('lvlNum').textContent = state.level;
+  document.getElementById('lvlText').textContent = state.level;
+  document.getElementById('expText').textContent = state.exp+' из '+state.expMax;
+  document.getElementById('lvlBar').style.width = Math.min(state.exp/state.expMax*100,100)+'%';
+  document.getElementById('cloverCount').textContent = state.clover;
+
+  const phoneBadge = document.getElementById('phoneBadge');
+  if (phoneBadge){
+    if (state.phones.length>0){ phoneBadge.textContent = state.phones.length; phoneBadge.style.display='flex'; }
+    else phoneBadge.style.display='none';
+  }
+  const refCount = document.getElementById('refCount');
+  if (refCount) refCount.textContent = state.refCount;
+
+  const canDaily = Date.now() - state.lastDaily > 20*3600*1000;
+  const dailyBadge = document.getElementById('dailyBadge');
+  if (dailyBadge) dailyBadge.style.display = canDaily ? 'flex' : 'none';
+
+  if (document.getElementById('profileName')){
+    document.getElementById('profileName').textContent = state.userName;
+    const av = document.getElementById('profileAvatar');
+    if (state.userPhoto){ av.innerHTML = `<img src="${state.userPhoto}" alt="">`; }
+    else { av.textContent = state.userName.charAt(0).toUpperCase(); }
+    document.getElementById('profileLvl').textContent = state.level;
+    document.getElementById('stSpins').textContent = state.spins;
+    document.getElementById('stPhones').textContent = state.phones.length;
+    document.getElementById('stSims').textContent = state.sims.length;
+    document.getElementById('stBal').textContent = fmt(state.balance)+' ₽';
+  }
+  const avMenu = document.getElementById('avatarLetter');
+  if (avMenu){
+    if (state.userPhoto){ avMenu.innerHTML = `<img src="${state.userPhoto}" alt="">`; }
+    else { avMenu.textContent = state.userName.charAt(0).toUpperCase(); }
+  }
+
+  updateTasksBadge();
+  renderActiveBoosts();
+}
+
+function showSnack(text){
+  const s = document.getElementById('snackbar');
+  s.textContent = text; s.classList.add('show');
+  clearTimeout(s._t); s._t = setTimeout(()=>s.classList.remove('show'),2500);
+}
+function showToast(text, ms=2200){
+  const t = document.getElementById('toast');
+  t.textContent = text; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), ms);
+}
+
+// ================= TABS =================
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  closeOverlay('phonesOverlay');
+  closeOverlay('simsOverlay');
+  if (t === 'numbers'){
+    document.getElementById('tabNumbers').classList.add('active');
+    document.querySelectorAll('.nav-item')[0].classList.add('active');
+    document.getElementById('mainArea').style.display = 'flex';
+  } else if (t === 'phones'){
+    document.getElementById('tabPhones').classList.add('active');
+    document.querySelectorAll('.nav-item')[1].classList.add('active');
+    document.getElementById('mainArea').style.display = 'none';
+    openPhonesOverlay();
+  } else if (t === 'sims'){
+    document.getElementById('tabSims').classList.add('active');
+    document.querySelectorAll('.nav-item')[2].classList.add('active');
+    document.getElementById('mainArea').style.display = 'none';
+    openSimsOverlay();
+  }
+}
+function openOverlay(id){ document.getElementById(id).classList.add('show'); }
+function closeOverlay(id){ document.getElementById(id).classList.remove('show'); }
+
+// ================= CONFETTI =================
+function launchConfetti(){
+  const c = document.getElementById('confetti');
+  c.innerHTML = '';
+  c.classList.add('show');
+  const colors = ['#ff0080','#ffd700','#00ff88','#00bfff','#8a2be2','#ff3b5c'];
+  for (let i=0;i<80;i++){
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left = Math.random()*100+'%';
+    p.style.background = colors[rnd(colors.length)];
+    p.style.animationDuration = (1.5 + Math.random()*1.5)+'s';
+    p.style.animationDelay = (Math.random()*0.3)+'s';
+    p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    c.appendChild(p);
+  }
+  setTimeout(()=>{ c.classList.remove('show'); }, 3500);
+}
+
+// ================= BOOSTS =================
+function hasBoost(type){ return state.boosts[type] > Date.now(); }
+function getBoostMult(type){ return hasBoost(type) ? 2 : 1; }
+function getPetBonus(){
+  // Питомец даёт +5% за каждые 10 уровней
+  const petLvl = state.pet?.level || 1;
+  return 1 + Math.floor(petLvl / 10) * 0.05;
+}
+function renderActiveBoosts(){
+  const c = document.getElementById('activeBoosts');
+  if (!c) return;
+  c.innerHTML = '';
+  const now = Date.now();
+  const list = [
+    { key:'luck',     label:'🍀 Удача x2',    cls:'green' },
+    { key:'income',   label:'💰 Доход x2',    cls:'' },
+    { key:'fastSpin', label:'⚡ Быстрый крут', cls:'purple' },
+    { key:'autoSpin', label:'🤖 Авто',         cls:'' },
+  ];
+  list.forEach(b=>{
+    const remain = state.boosts[b.key] - now;
+    if (remain > 0){
+      const min = Math.ceil(remain / 60000);
+      const div = document.createElement('div');
+      div.className = 'boost-pill ' + b.cls;
+      div.textContent = b.label + ' (' + min + 'м)';
+      c.appendChild(div);
+    }
+  });
+  if (state.subscribedBoostUntil > now){
+    const min = Math.ceil((state.subscribedBoostUntil - now) / 60000);
+    const div = document.createElement('div');
+    div.className = 'boost-pill green';
+    div.textContent = '📢 Подписка (+50%) (' + min + 'м)';
+    c.appendChild(div);
+  }
+  // Пет-бонус
+  const petBonus = getPetBonus();
+  if (petBonus > 1){
+    const div = document.createElement('div');
+    div.className = 'boost-pill';
+    div.textContent = '🐶 Пет +' + Math.round((petBonus-1)*100) + '%';
+    c.appendChild(div);
+  }
+}
+
+// ================= SPIN =================
+let spinning = false;
+let autoInterval = null;
+
+function spin(){
+  if (spinning) return;
+  spinning = true;
+  const btn = document.getElementById('spinBtn');
+  const cost = state.stake === 1 ? 0 : state.stake * 1000;
+
+  if (!state.subscribed){
+    document.getElementById('subscribePopup').classList.add('show');
+    spinning = false;
+    return;
+  }
+
+  if (cost > 0 && state.balance < cost){
+    showToast('Нужно ' + fmt(cost) + ' ₽ для ставки ×' + state.stake);
+    spinning = false;
+    return;
+  }
+  if (cost > 0) state.balance -= cost;
+
+  btn.disabled = true;
+  btn.textContent = 'КРУТИМ...';
+
+  const country = COUNTRIES[state.country];
+  const el = document.getElementById('numBig');
+  const fast = hasBoost('fastSpin');
+  const intervalTime = fast ? 30 : 70;
+  const maxTicks = fast ? 8 : 18;
+  let ticks = 0;
+
+  const interval = setInterval(()=>{
+    if (state.demoMode && state.demoNumber){ el.textContent = state.demoNumber; }
+    else { el.textContent = country.gen(); }
+    if (!fast) playTick();
+    ticks++;
+    if (ticks >= maxTicks){
+      clearInterval(interval);
+      finishSpin(country);
+    }
+  }, intervalTime);
+}
+
+function finishSpin(country){
+  let number, rarity, reasons;
+
+  if (state.demoMode && state.demoNumber){
+    number = state.demoNumber;
+    rarity = RARITIES[4];
+    reasons = [{ text:'9×9 подряд', mult: 200 }, { text:'топовое окончание 999', mult: 4 }];
+  } else {
+    rarity = pickRarityWithBoost();
+    const gen = generateNumberByRarity(state.country, rarity.id);
+    number = gen.number;
+    if (rarity.id !== 'legendary' && rarity.id !== 'absolute'){
+      const ev = evaluateNumber(number, state.country);
+      rarity = ev.rarity;
+      reasons = ev.reasons;
+    } else {
+      reasons = gen.reasons;
+      const ev = evaluateNumber(number, state.country);
+      if (ev.reasons.length > 0 && reasons.length === 0) reasons = ev.reasons;
+    }
+    if (!reasons) reasons = [];
+  }
+
+  document.getElementById('numBig').textContent = number;
+  document.getElementById('numRegion').textContent = country.flag + ' ' + country.name;
+  document.getElementById('numRarity').textContent = rarity.name;
+  document.getElementById('numRarity').style.color = rarity.color;
+  document.getElementById('rarityName').textContent = rarity.name;
+  document.getElementById('rarityName').style.color = rarity.color;
+
+  const dots = document.querySelectorAll('#rarityDots span');
+  dots.forEach((d,i)=>{
+    d.classList.toggle('on', i < rarity.dots);
+    d.style.background = i<rarity.dots ? rarity.color : '';
+  });
+
+  const bl = document.getElementById('beautyList');
+  bl.innerHTML = '';
+  if (reasons.length === 0){
+    bl.innerHTML = '<div style="color:#666;font-size:12px;">Обычный номер без особенностей</div>';
+  } else {
+    reasons.forEach(r=>{
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.innerHTML = `${r.text} <span class="mult">×${r.mult}</span>`;
+      bl.appendChild(div);
+    });
+  }
+
+  // ЭКОНОМИКА — сложная
+  const basePrice = 50 + rnd(150);
+  const boostMult = getBoostMult('income');
+  const petBonus = getPetBonus();
+  const beautyScore = reasons.reduce((s,r)=>s+r.mult,0);
+  let beautyBonus = 1;
+  if (beautyScore >= 200) beautyBonus = 3;
+  else if (beautyScore >= 100) beautyBonus = 2;
+  else if (beautyScore >= 50) beautyBonus = 1.5;
+
+  const rarityMult = {
+    common: 1, rare: 3, epic: 15, mythic: 100,
+    legendary: 1000, absolute: 5000,
+  }[rarity.id] || 1;
+
+  // ДЖЕКПОТ — шанс 1% на ×10
+  let jackpot = false;
+  if (Math.random() < 0.01){
+    jackpot = true;
+  }
+  const jackpotMult = jackpot ? 10 : 1;
+
+  const price = Math.floor(basePrice * rarityMult * state.stake * boostMult * beautyBonus * petBonus * jackpotMult);
+  document.getElementById('rarityPrice').textContent = fmt(price) + ' ₽';
+  document.getElementById('rarityPrice').style.color = rarity.color;
+
+  const badge = document.getElementById('jackpotBadge');
+  if (jackpot){ badge.classList.add('show'); } else { badge.classList.remove('show'); }
+
+  const rewardMult = state.stake === 1 ? 0.5 : 0.8;
+  const earned = Math.floor(price * rewardMult);
+  state.balance += earned;
+
+  const expGain = 2 + Math.floor(rarity.mult / 2);
+  state.exp += expGain;
+  while (state.exp >= state.expMax){
+    state.exp -= state.expMax;
+    state.level++;
+    state.expMax = expForLevel(state.level);
+  }
+
+  if (rarity.id === 'mythic' || rarity.id === 'legendary' || rarity.id === 'absolute'){
+    state.clover += Math.floor(rarity.mult / 5);
+  }
+
+  // ЗИМНИЙ ИВЕНТ — 5000 круток = 1 снежинка
+  state.winter.totalSpins = (state.winter.totalSpins || 0) + 1;
+  while (state.winter.totalSpins >= 5000){
+    state.winter.totalSpins -= 5000;
+    state.winter.snowflakes = (state.winter.snowflakes || 0) + 1;
+    if (state.winter.snowflakes >= 10){
+      state.winter.snowflakes -= 10;
+      state.winter.snowballs = (state.winter.snowballs || 0) + 1;
+      showToast('❄️ +1 снежок! Всего: ' + state.winter.snowballs);
+    }
+  }
+
+  // Звук + анимация
+  if (jackpot){ playJackpot(); launchConfetti(); }
+  else if (rarity.id === 'absolute'){ playAbsolute(); launchConfetti(); }
+  else if (rarity.id === 'legendary' || rarity.id === 'mythic'){ playWin(); launchConfetti(); }
+  else if (rarity.id === 'epic'){ playSell(); }
+
+  // Без тряски — только свечение
+  const card = document.getElementById('numberCard');
+  card.style.boxShadow = '0 0 50px ' + rarity.color + '80';
+  if (jackpot) card.classList.add('jackpot');
+  setTimeout(()=>{
+    card.style.boxShadow='';
+    card.classList.remove('jackpot');
+  }, 1500);
+
+  state.currentNumber = {
+    number, country: state.country, rarity: rarity.id,
+    price, reasons, operator: country.ops[rnd(country.ops.length)],
+  };
+
+  // АВТОСОХРАНЕНИЕ СИМКИ (эпик+) — с правильной страной
+  if (rarity.id !== 'common' && rarity.id !== 'rare'){
+    state.sims.push({
+      number, country: state.country,
+      operator: country.ops[rnd(country.ops.length)],
+      rarity: rarity.id, value: price, used: false,
+    });
+    setTimeout(()=>showToast('📶 ' + rarity.name + ' симка сохранена!'), 800);
+  }
+
+  // КОЛЛЕКЦИЯ — сохраняем ВСЕ номера
+  state.collection.push({
+    number, country: state.country, rarity: rarity.id,
+    price, ts: Date.now(),
+  });
+  if (state.collection.length > 200){
+    state.collection = state.collection.slice(-200);
+  }
+
+  state.spins++;
+  state.tasks.spins = (state.tasks.spins||0) + 1;
+  state.tasks.money = (state.tasks.money||0) + earned;
+
+  // Питомец получает опыт
+  addPetExp(1);
+
+  // Проверка достижений
+  checkAchievements();
+
+  save(); updateUI();
+  showSnack('+' + fmt(earned) + ' ₽  •  +' + expGain + ' опыта' + (jackpot ? '  🎰 ДЖЕКПОТ!' : ''));
+
+  spinning = false;
+  const btn = document.getElementById('spinBtn');
+  btn.disabled = false;
+  updateSpinBtnLabel();
+}
+
+function setStake(n){
+  state.stake = n;
+  document.getElementById('stake1').classList.toggle('active', n===1);
+  document.getElementById('stake5').classList.toggle('active', n===5);
+  document.getElementById('stake10').classList.toggle('active', n===10);
+  updateSpinBtnLabel();
+  save();
+}
+
+function updateSpinBtnLabel(){
+  const btn = document.getElementById('spinBtn');
+  if (!btn) return;
+  const cost = state.stake === 1 ? 0 : state.stake * 1000;
+  btn.textContent = cost === 0 ? 'КРУТИТЬ (бесплатно)' : 'КРУТИТЬ (' + fmt(cost) + ' ₽)';
+}
+
+// ================= AUTO SPIN =================
+function toggleAuto(){
+  const btn = document.getElementById('autoBtn');
+  if (autoInterval){
+    clearInterval(autoInterval);
+    autoInterval = null;
+    btn.classList.remove('active');
+    btn.textContent = 'АВТО';
+    showToast('Автокрут выключен');
+    return;
+  }
+  btn.classList.add('active');
+  btn.textContent = 'СТОП';
+  showToast('🤖 Автокрут включён');
+  autoInterval = setInterval(()=>{
+    if (spinning) return;
+    const cost = state.stake === 1 ? 0 : state.stake * 1000;
+    if (cost > 0 && state.balance < cost){
+      clearInterval(autoInterval);
+      autoInterval = null;
+      btn.classList.remove('active');
+      btn.textContent = 'АВТО';
+      showToast('Автокрут остановлен: мало денег');
+      return;
+    }
+    spin();
+  }, 1700);
+}
+
+// ================= SAVE TO PHONE =================
+function saveToPhone(){
+  if (!state.currentNumber){ showToast('Сначала крути номер'); return; }
+  if (state.currentNumber.rarity === 'common'){ showToast('Обычный номер нельзя сохранить.'); return; }
+  state.sims.push({
+    number: state.currentNumber.number,
+    country: state.currentNumber.country,
+    operator: state.currentNumber.operator,
+    rarity: state.currentNumber.rarity,
+    value: state.currentNumber.price,
+    used: false,
+  });
+  showToast('📶 Симка сохранена!');
+  state.currentNumber = null;
+  save(); updateUI();
+}
+
+function shareNum(){
+  if (!state.currentNumber) return;
+  const txt = state.currentNumber.number + ' (' + state.currentNumber.rarity + ')';
+  navigator.clipboard?.writeText(txt).then(()=>showToast('Скопировано!')).catch(()=>{});
+}
+
+// ================= SUBSCRIBE =================
+function openSubscribePopup(){
+  document.getElementById('subscribePopup').classList.add('show');
+}
+function openChannel(){
+  window.open('https://t.me/AppNomerokKanal', '_blank');
+  setTimeout(()=>{
+    showToast('Проверяем подписку...');
+    setTimeout(()=>{
+      state.subscribed = true;
+      state.subscribedBoostUntil = Date.now() + 10 * 60 * 1000;
+      save();
+      document.getElementById('subscribePopup').classList.remove('show');
+      showToast('✅ Подписка подтверждена! +50% на 10 мин');
+      updateUI();
+    }, 1500);
+  }, 2000);
+}
+function confirmSubscribe(){
+  state.subscribed = true;
+  state.subscribedBoostUntil = Date.now() + 10 * 60 * 1000;
+  save();
+  document.getElementById('subscribePopup').classList.remove('show');
+  showToast('✅ Подписка подтверждена! +50% на 10 мин');
+  updateUI();
+}
+
+// ================= DEMO (10 тапов по ЛОГОТИПУ) =================
+document.getElementById('logoBtn')?.addEventListener('click', ()=>{
+  state.demoClicks = (state.demoClicks||0) + 1;
+  if (state.demoClicks >= 10){
+    state.demoClicks = 0;
+    openDemoPopup();
+  }
+  setTimeout(()=>{ state.demoClicks = 0; }, 3000);
+});
+function openDemoPopup(){
+  const list = document.getElementById('demoList');
+  list.innerHTML = '';
+  const numbers = [
+    '+7 (999) 999-99-99', '+7 (777) 777-77-77', '+7 (888) 888-88-88',
+    '+7 (123) 456-78-90', '+7 (999) 123-45-67', '+7 (777) 123-45-67',
+  ];
+  numbers.forEach(n=>{
+    const btn = document.createElement('button');
+    btn.className = 'popup-btn';
+    btn.style.marginBottom = '0';
+    btn.textContent = n;
+    btn.onclick = ()=>{
+      state.demoMode = true;
+      state.demoNumber = n;
+      save();
+      document.getElementById('demoPopup').classList.remove('show');
+      showToast('🎬 Демо: ' + n);
+    };
+    list.appendChild(btn);
+  });
+  document.getElementById('demoPopup').classList.add('show');
+}
+function disableDemo(){
+  state.demoMode = false;
+  state.demoNumber = null;
+  save();
+  document.getElementById('demoPopup').classList.remove('show');
+  showToast('❌ Демо выключено');
+}
+
+// ================= TASKS =================
+function ensureTasksToday(){
+  const key = todayKey();
+  if (state.tasks.date !== key){
+    state.tasks.date = key;
+    state.tasks.spins = 0; state.tasks.boxes = 0;
+    state.tasks.sold = 0; state.tasks.money = 0;
+    state.tasks.claimed = [];
+    save();
+  }
+}
+function getTaskProgress(taskId){
+  const t = state.tasks;
+  switch(taskId){
+    case 'spins10': return t.spins || 0;
+    case 'spins50': return t.spins || 0;
+    case 'boxes3':  return t.boxes || 0;
+    case 'boxes10': return t.boxes || 0;
+    case 'sold1':   return t.sold || 0;
+    case 'sold5':   return t.sold || 0;
+    case 'money50k':return t.money || 0;
+    default: return 0;
+  }
+}
+function isTaskClaimed(taskId){ return (state.tasks.claimed || []).includes(taskId); }
+function isTaskDone(task){ return getTaskProgress(task.id) >= task.target; }
+function renderTasks(){
+  ensureTasksToday();
+  const list = document.getElementById('tasksList');
+  if (!list) return;
+  list.innerHTML = '';
+  TASK_TEMPLATES.forEach(task=>{
+    const progress = getTaskProgress(task.id);
+    const done = isTaskDone(task);
+    const claimed = isTaskClaimed(task.id);
+    const card = document.createElement('div');
+    card.className = 'task-card' + (done && !claimed ? ' done' : '');
+    card.innerHTML = `
+      <div class="task-icon">${task.icon}</div>
+      <div class="task-info">
+        <div class="task-name">${task.name}</div>
+        <div class="task-progress">${Math.min(progress, task.target)} / ${task.target}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="task-reward">+${fmt(task.reward)} ₽</div>
+        <button class="task-claim" ${!done || claimed ? 'disabled' : ''} onclick="claimTask('${task.id}', ${task.reward})">
+          ${claimed ? '✓' : 'Забрать'}
+        </button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+function claimTask(taskId, reward){
+  if (isTaskClaimed(taskId)) return;
+  const task = TASK_TEMPLATES.find(t=>t.id===taskId);
+  if (!task || !isTaskDone(task)) return;
+  state.tasks.claimed.push(taskId);
+  state.balance += reward;
+  state.exp += 30;
+  while (state.exp >= state.expMax){
+    state.exp -= state.expMax;
+    state.level++;
+    state.expMax = expForLevel(state.level);
+  }
+  save(); updateUI(); renderTasks();
+  playCash();
+  showToast('🎉 +' + fmt(reward) + ' ₽ за задание!');
+}
+function updateTasksBadge(){
+  const badge = document.getElementById('tasksBadge');
+  if (!badge) return;
+  ensureTasksToday();
+  const hasClaimable = TASK_TEMPLATES.some(t => isTaskDone(t) && !isTaskClaimed(t.id));
+  badge.style.display = hasClaimable ? 'flex' : 'none';
+}
+
+// ================= PET =================
+function addPetExp(n){
+  if (!state.pet) return;
+  state.pet.exp += n;
+  while (state.pet.exp >= state.pet.expMax){
+    state.pet.exp -= state.pet.expMax;
+    state.pet.level++;
+    state.pet.expMax = Math.floor(100 * Math.pow(state.pet.level, 1.5));
+    if (state.pet.level % 5 === 0) showToast('🐶 Питомец вырос! Уровень ' + state.pet.level);
+  }
+}
+function petFeed(){
+  if (!state.pet) return;
+  if (state.balance < 500){ showToast('Нужно 500 ₽'); return; }
+  state.balance -= 500;
+  state.pet.food = Math.min(100, state.pet.food + 20);
+  state.pet.exp += 10;
+  addPetExp(0);
+  playSell();
+  save(); updateUI(); renderPet();
+  showToast('🍖 Питомец покормлен!');
+}
+function petPlay(){
+  if (!state.pet) return;
+  if (state.pet.energy < 20){ showToast('Питомец устал, пусть поспит'); return; }
+  state.pet.energy -= 20;
+  state.pet.happy = Math.min(100, state.pet.happy + 20);
+  state.pet.exp += 15;
+  addPetExp(0);
+  playWin();
+  save(); updateUI(); renderPet();
+  showToast('🎾 Питомец рад!');
+}
+function petSleep(){
+  if (!state.pet) return;
+  state.pet.energy = Math.min(100, state.pet.energy + 30);
+  state.pet.food = Math.max(0, state.pet.food - 10);
+  playCash();
+  save(); updateUI(); renderPet();
+  showToast('💤 Питомец поспал');
+}
+function openPetOverlay(){
+  renderPet();
+  closeOverlay('menuOverlay');
+  openOverlay('petOverlay');
+}
+function renderPet(){
+  if (!state.pet) return;
+  const p = state.pet;
+  const petEmoji = document.getElementById('petEmoji');
+  if (petEmoji) {
+    if (p.level >= 20) petEmoji.textContent = '🐕‍🦺';
+    else if (p.level >= 10) petEmoji.textContent = '🐕';
+    else if (p.level >= 5) petEmoji.textContent = '🐶';
+    else petEmoji.textContent = '🐶';
+  }
+  document.getElementById('petName').textContent = p.name;
+  document.getElementById('petLevel').textContent = p.level;
+  document.getElementById('petExp').textContent = p.exp;
+  document.getElementById('petExpMax').textContent = p.expMax;
+  document.getElementById('petFood').textContent = p.food;
+  document.getElementById('petHappy').textContent = p.happy;
+  document.getElementById('petEnergy').textContent = p.energy;
+  const fill = document.getElementById('petExpFill');
+  if (fill) fill.style.width = Math.min(p.exp / p.expMax * 100, 100) + '%';
+}
+  // ================= PHONES =================
+function openPhonesOverlay(){
+  const g = document.getElementById('phonesGrid');
+  g.innerHTML = '';
+  if (state.phones.length === 0){
+    g.innerHTML = '<div class="empty">Пока пусто. Открывай коробки в Магазине!</div>';
+    closeOverlay('menuOverlay');
+    openOverlay('phonesOverlay');
+    return;
+  }
+  state.phones.forEach((p, idx)=>{
+    const rar = getRarityById(p.rarity);
+    const d = document.createElement('div');
+    d.className = 'phone-card';
+    const simBlock = p.sim
+      ? `<div class="sim-slot filled">📶 ${p.sim.number} <button class="pull-btn" onclick="removeSim(${idx});event.stopPropagation();">📤</button></div>`
+      : `<div class="sim-slot" onclick="insertSim(${idx});event.stopPropagation();">➕ Вставить симку</div>`;
+    d.innerHTML = `
+      ${renderPhoneModel(p.rarity, p.model || 'smart')}
+      <div class="name">${p.name}</div>
+      <div class="price" style="color:${rar.color}">${fmt(p.price)} ₽</div>
+      ${simBlock}
+      <button class="sell-btn" onclick="sellPhone(${idx});event.stopPropagation();">💸 Продать за ${fmt(Math.floor(p.price*0.5))} ₽</button>
+    `;
+    g.appendChild(d);
+  });
+  closeOverlay('menuOverlay');
+  openOverlay('phonesOverlay');
+}
+
+function insertSim(phoneIdx){
+  const phone = state.phones[phoneIdx];
+  if (!phone) return;
+  if (phone.sim){ showToast('Симка уже вставлена'); return; }
+  const freeSim = state.sims.find(s=>!s.used);
+  if (!freeSim){ showToast('Нет свободных симок. Крути номер и сохрани!'); return; }
+  freeSim.used = true;
+  phone.sim = { number: freeSim.number, rarity: freeSim.rarity, value: freeSim.value };
+  showToast('📶 Симка вставлена в ' + phone.name + '!');
+  save(); updateUI();
+  openPhonesOverlay();
+}
+
+function removeSim(phoneIdx){
+  const phone = state.phones[phoneIdx];
+  if (!phone || !phone.sim) return;
+  const sim = state.sims.find(s => s.number === phone.sim.number && s.used);
+  if (sim) sim.used = false;
+  phone.sim = null;
+  playSell();
+  showToast('📤 Симка вытащена из ' + phone.name);
+  save(); updateUI();
+  openPhonesOverlay();
+}
+
+function sellPhone(idx){
+  const phone = state.phones[idx];
+  if (!phone) return;
+  const price = Math.floor(phone.price * 0.5);
+  state.balance += price;
+  state.phones.splice(idx, 1);
+  state.tasks.sold = (state.tasks.sold||0) + 1;
+  playSell();
+  showToast('💸 +' + fmt(price) + ' ₽ за ' + phone.name);
+  checkAchievements();
+  save(); updateUI();
+  openPhonesOverlay();
+}
+
+// ================= SIMS =================
+function openSimsOverlay(){
+  const g = document.getElementById('simsList');
+  g.innerHTML = '';
+  if (state.sims.length === 0){
+    g.innerHTML = '<div class="empty">Пока пусто. Крути номера и сохраняй их как симки!</div>';
+    closeOverlay('menuOverlay');
+    openOverlay('simsOverlay');
+    return;
+  }
+  state.sims.forEach((s, idx)=>{
+    const rar = getRarityById(s.rarity);
+    const country = COUNTRIES[s.country] || COUNTRIES.ru;
+    const card = document.createElement('div');
+    card.className = 'sim-card-h';
+    card.style.setProperty('--rc', rar.color);
+    card.innerHTML = `
+      <div class="sim-chip"></div>
+      <div class="sim-info">
+        <div class="sim-num">${s.number}</div>
+        <div class="sim-meta">${country.flag} ${country.name} · ${s.operator}</div>
+        <div class="sim-rarity" style="color:${rar.color}">${rar.name}</div>
+      </div>
+      <div class="sim-actions">
+        ${s.used ? '<span style="font-size:10px;color:#2ecc71;font-weight:800;">Вставлена</span>' : `
+          <button style="background:linear-gradient(135deg,#2ecc71,#00ff88);color:#000;" onclick="sellSim(${idx})">💸 Продать</button>
+          <button style="background:linear-gradient(135deg,#8a2be2,#ff0080);color:#fff;" onclick="autoInsertSim(${idx})">📲 Вставить</button>
+        `}
+      </div>
+    `;
+    g.appendChild(card);
+  });
+  closeOverlay('menuOverlay');
+  openOverlay('simsOverlay');
+}
+
+function sellSim(idx){
+  const s = state.sims[idx];
+  if (!s) return;
+  if (s.used){ showToast('Симка вставлена в телефон'); return; }
+  const price = Math.floor(s.value * 0.4);
+  state.balance += price;
+  state.sims.splice(idx, 1);
+  playSell();
+  showToast('💸 +' + fmt(price) + ' ₽ за симку');
+  save(); updateUI();
+  openSimsOverlay();
+}
+
+function autoInsertSim(idx){
+  const s = state.sims[idx];
+  if (!s || s.used) return;
+  const phone = state.phones.find(p => !p.sim);
+  if (!phone){ showToast('Нет телефона без симки. Открой коробку!'); return; }
+  s.used = true;
+  phone.sim = { number: s.number, rarity: s.rarity, value: s.value };
+  showToast('📶 Симка вставлена в ' + phone.name);
+  save(); updateUI();
+  openSimsOverlay();
+}
+
+// ================= SHOP =================
+function openShopOverlay(){
+  const g = document.getElementById('boxesGrid');
+  g.innerHTML = '';
+  BOXES.forEach(b=>{
+    const canBuy = state.balance >= b.price;
+    const d = document.createElement('div');
+    d.className = 'box-card';
+    d.style.opacity = canBuy ? '1' : '0.5';
+    d.innerHTML = `
+      <div class="box-emoji">${b.emoji}</div>
+      <div class="box-name" style="color:${b.color}">${b.name}</div>
+      <div class="box-price" style="color:${b.color}">${fmt(b.price)} ₽</div>
+      <div class="box-chance">${Object.entries(b.chances).map(([k,v])=>k+' '+(v*100).toFixed(0)+'%').join(' · ')}</div>
+    `;
+    d.onclick = ()=>{
+      if (state.balance < b.price){ showToast('Не хватает денег. Накрути номеров!'); return; }
+      openCaseView(b);
+    };
+    g.appendChild(d);
+  });
+  closeOverlay('menuOverlay');
+  openOverlay('shopOverlay');
+}
+
+// ================= CASE =================
+let currentCase = null, caseRolling = false;
+
+function openCaseView(box){
+  currentCase = box;
+  document.getElementById('caseTitle').textContent = box.name + ' коробка';
+  const btn = document.getElementById('caseOpenBtn');
+  btn.textContent = 'Открыть за ' + fmt(box.price) + ' ₽';
+  btn.disabled = false;
+  buildStrip(box);
+  closeOverlay('shopOverlay');
+  openOverlay('caseOverlay');
+}
+
+function buildStrip(box){
+  const strip = document.getElementById('caseStrip');
+  strip.style.transition = 'none';
+  strip.style.transform = 'translateX(0)';
+  strip.innerHTML = '';
+  const pool = PHONES.filter(p=>Object.keys(box.chances).includes(p.rarity));
+  if (pool.length === 0) return;
+  const items = [];
+  for (let i=0;i<30;i++){
+    const p = pool[rnd(pool.length)];
+    items.push(p);
+    const rar = getRarityById(p.rarity);
+    const d = document.createElement('div');
+    d.className = 'case-item';
+    d.style.setProperty('--glow', rar.color + '80');
+    d.style.setProperty('--rc', rar.color + '60');
+    d.innerHTML = `${renderPhoneModel(p.rarity, p.model)}<div class="nm">${p.name}</div>`;
+    strip.appendChild(d);
+  }
+  currentCase._items = items;
+}
+
+function openCase(){
+  if (!currentCase || caseRolling) return;
+  caseRolling = true;
+  const btn = document.getElementById('caseOpenBtn');
+  btn.disabled = true;
+  btn.textContent = 'Крутим...';
+  const box = currentCase;
+
+  if (state.balance < box.price){
+    caseRolling = false;
+    btn.disabled = false;
+    btn.textContent = 'Открыть за ' + fmt(box.price) + ' ₽';
+    showToast('Не хватает ' + fmt(box.price) + ' ₽');
+    return;
+  }
+  state.balance -= box.price;
+  save(); updateUI();
+
+  const r = Math.random();
+  let acc = 0, prizeRarity = null;
+  for (const [k,v] of Object.entries(box.chances)){
+    acc += v;
+    if (r <= acc){ prizeRarity = k; break; }
+  }
+  if (!prizeRarity) prizeRarity = Object.keys(box.chances)[0];
+
+  const pool = PHONES.filter(p=>p.rarity === prizeRarity);
+  // РАНДОМ — не один и тот же
+  const prize = pool[rnd(pool.length)];
+
+  const items = currentCase._items;
+  const winIndex = 24;
+  items[winIndex] = prize;
+
+  const strip = document.getElementById('caseStrip');
+  strip.style.transition = 'none';
+  strip.style.transform = 'translateX(0)';
+  strip.innerHTML = '';
+  items.forEach(p=>{
+    const rar = getRarityById(p.rarity);
+    const d = document.createElement('div');
+    d.className = 'case-item';
+    d.style.setProperty('--glow', rar.color + '80');
+    d.style.setProperty('--rc', rar.color + '60');
+    d.innerHTML = `${renderPhoneModel(p.rarity, p.model)}<div class="nm">${p.name}</div>`;
+    strip.appendChild(d);
+  });
+
+  let tickCount = 0;
+  const tickInterval = setInterval(()=>{
+    playTick();
+    tickCount++;
+    if (tickCount >= 20) clearInterval(tickInterval);
+  }, 200);
+
+  const itemW = 130 + 12;
+  const centerOffset = strip.parentElement.clientWidth / 2 - 65;
+  const target = -(winIndex * itemW) + centerOffset + (Math.random()*40-20);
+
+  requestAnimationFrame(()=>{
+    strip.style.transition = 'transform 4s cubic-bezier(.15,.9,.2,1)';
+    strip.style.transform = `translateX(${target}px)`;
+  });
+
+  setTimeout(()=>{
+    caseRolling = false;
+    btn.disabled = false;
+    btn.textContent = 'Ещё раз за ' + fmt(box.price) + ' ₽';
+
+    if (prize.rarity === 'absolute'){ playAbsolute(); launchConfetti(); }
+    else if (prize.rarity === 'legendary' || prize.rarity === 'mythic'){ playWin(); launchConfetti(); }
+    else if (prize.rarity === 'epic'){ playSell(); }
+
+    state.phones.push({...prize, sim: null});
+    state.exp += 10;
+    while (state.exp >= state.expMax){
+      state.exp -= state.expMax;
+      state.level++;
+      state.expMax = expForLevel(state.level);
+    }
+    state.tasks.boxes = (state.tasks.boxes||0) + 1;
+    checkAchievements();
+    save(); updateUI();
+    showToast('🎉 ' + prize.name + '!', 3000);
+  }, 4200);
+}
+
+// ================= COUNTRIES =================
+function openCountriesOverlay(){
+  const g = document.getElementById('countryGrid');
+  g.innerHTML = '';
+  Object.entries(COUNTRIES).forEach(([key,c])=>{
+    const d = document.createElement('div');
+    d.className = 'country-btn' + (state.country===key ? ' active' : '');
+    d.innerHTML = `<span class="flag">${c.flag}</span><span>${c.name}</span>`;
+    d.onclick = ()=>{
+      state.country = key;
+      save();
+      document.getElementById('numRegion').textContent = c.flag + ' ' + c.name;
+      openCountriesOverlay();
+      showToast('Страна: ' + c.name);
+    };
+    g.appendChild(d);
+  });
+  closeOverlay('menuOverlay');
+  openOverlay('countriesOverlay');
+}
+
+// ================= FRIENDS =================
+function openFriendsOverlay(){
+  const link = 'https://t.me/AppNomerokBot?start=ref' + ((tgUser?.id || 0) % 99999);
+  document.getElementById('refLink').textContent = link;
+  closeOverlay('menuOverlay');
+  openOverlay('friendsOverlay');
+}
+function copyRef(){
+  const txt = document.getElementById('refLink').textContent;
+  navigator.clipboard?.writeText(txt).then(()=>showToast('Скопировано!')).catch(()=>{});
+}
+
+// ================= DAILY =================
+function openDailyOverlay(){
+  const now = Date.now();
+  const can = now - state.lastDaily > 20*3600*1000;
+  const txt = document.getElementById('dailyText');
+  const btn = document.getElementById('dailyBtn');
+  if (can){
+    const streak = state.dailyStreak + 1;
+    const bonus = 500 * streak;
+    txt.innerHTML = `День <b>${streak}</b> подряд!<br>Награда: <b style="color:#ffd700;">${fmt(bonus)} ₽</b>`;
+    btn.textContent = 'Забрать';
+    btn.onclick = claimDaily;
+    btn.style.display = 'block';
+  } else {
+    txt.innerHTML = `Уже забрал сегодня!<br>Возвращайся завтра 🌙`;
+    btn.style.display = 'none';
+  }
+  closeOverlay('menuOverlay');
+  openOverlay('dailyOverlay');
+}
+function claimDaily(){
+  const now = Date.now();
+  if (now - state.lastDaily < 20*3600*1000){ showToast('Уже забрал!'); return; }
+  state.dailyStreak++;
+  state.lastDaily = now;
+  const bonus = 500 * state.dailyStreak;
+  state.balance += bonus;
+  state.exp += 20;
+  while (state.exp >= state.expMax){
+    state.exp -= state.expMax;
+    state.level++;
+    state.expMax = expForLevel(state.level);
+  }
+  save(); updateUI();
+  closeOverlay('dailyOverlay');
+  showToast('🎁 +' + fmt(bonus) + ' ₽');
+  playSell();
+}
+
+// ================= WHEEL =================
+const WHEEL_PRIZES = [
+  { label:'500 ₽',       type:'money', value:500 },
+  { label:'iPhone 4',    type:'phone', phone:'iPhone 4' },
+  { label:'1000 ₽',      type:'money', value:1000 },
+  { label:'Samsung S8',  type:'phone', phone:'Samsung S8' },
+  { label:'250 ₽',       type:'money', value:250 },
+  { label:'Nokia 3310',  type:'phone', phone:'Nokia 3310' },
+  { label:'5000 ₽',      type:'money', value:5000 },
+  { label:'iPhone X',    type:'phone', phone:'iPhone X' },
+];
+let wheelRot = 0, wheelSpinning = false;
+
+function initWheel(){
+  const w = document.getElementById('wheel');
+  if (!w) return;
+  w.querySelectorAll('.wheel-label').forEach(e=>e.remove());
+  const n = WHEEL_PRIZES.length;
+  const slice = 360 / n;
+  WHEEL_PRIZES.forEach((p, i)=>{
+    const angle = slice * i + slice / 2 - 90;
+    const el = document.createElement('div');
+    el.className = 'wheel-label';
+    el.style.setProperty('--ang', angle + 'deg');
+    el.textContent = p.label;
+    w.appendChild(el);
+  });
+}
+function openWheelOverlay(){
+  initWheel();
+  closeOverlay('menuOverlay');
+  openOverlay('wheelOverlay');
+}
+function spinWheel(){
+  if (wheelSpinning) return;
+  wheelSpinning = true;
+  const btn = document.getElementById('wheelBtn');
+  btn.disabled = true;
+  btn.textContent = 'Крутим...';
+
+  let tickCount = 0;
+  const tickInt = setInterval(()=>{
+    playTick();
+    tickCount++;
+    if (tickCount >= 22) clearInterval(tickInt);
+  }, 200);
+
+  const idx = rnd(WHEEL_PRIZES.length);
+  const n = WHEEL_PRIZES.length;
+  const slice = 360 / n;
+  const targetSliceAngle = slice * idx + slice / 2;
+  const targetAngle = 360 * 8 + (360 - targetSliceAngle);
+
+  wheelRot = targetAngle;
+  document.getElementById('wheel').style.transform = `rotate(${wheelRot}deg)`;
+
+  setTimeout(()=>{
+    wheelSpinning = false;
+    btn.disabled = false;
+    btn.textContent = 'Крутить ещё';
+    const prize = WHEEL_PRIZES[idx];
+    if (prize.type === 'money'){
+      state.balance += prize.value;
+      playSell();
+      showToast('🎉 +' + fmt(prize.value) + ' ₽');
+    } else {
+      const p = PHONES.find(x=>x.name===prize.phone);
+      if (p){ state.phones.push({...p, sim:null}); playWin(); showToast('🎉 Телефон: ' + p.name + '!'); }
+    }
+    state.exp += 15;
+    while (state.exp >= state.expMax){
+      state.exp -= state.expMax;
+      state.level++;
+      state.expMax = expForLevel(state.level);
+    }
+    checkAchievements();
+    save(); updateUI();
+  }, 4700);
+}
+
+// ================= PROFILE =================
+function openProfileOverlay(){
+  updateUI();
+  renderBanners();
+  closeOverlay('menuOverlay');
+  openOverlay('profileOverlay');
+}
+function renderBanners(){
+  const g = document.getElementById('bannerGrid');
+  if (!g) return;
+  g.innerHTML = '';
+  BANNERS.forEach((b, i)=>{
+    const d = document.createElement('div');
+    d.className = 'banner-opt' + (state.banner === i ? ' active' : '');
+    d.style.background = b;
+    d.onclick = ()=>{
+      state.banner = i;
+      save();
+      renderBanners();
+      showToast('Баннер установлен!');
+    };
+    g.appendChild(d);
+  });
+}
+function changeNick(){
+  const name = prompt('Новый ник:', state.userName);
+  if (name && name.trim()){
+    state.userName = name.trim().slice(0, 20);
+    save(); updateUI();
+    showToast('Ник изменён!');
+  }
+}
+
+// ================= WINTER =================
+function openWinterOverlay(){
+  renderWinter();
+  closeOverlay('menuOverlay');
+  openOverlay('winterOverlay');
+}
+function renderWinter(){
+  const snowflakes = state.winter.snowflakes || 0;
+  const snowballs = state.winter.snowballs || 0;
+  const totalSpins = state.winter.totalSpins || 0;
+  document.getElementById('snowCount').textContent = snowflakes;
+  document.getElementById('snowballs').textContent = snowballs;
+  const fill = document.getElementById('snowFill');
+  if (fill) fill.style.width = Math.min(totalSpins/5000*100, 100) + '%';
+  const hint = document.getElementById('snowHint');
+  if (hint){
+    const left = 5000 - totalSpins;
+    hint.textContent = left > 0
+      ? 'Ещё ' + left + ' круток до снежинки!'
+      : 'Готово! Снежинка получена';
+  }
+  const rewardsList = document.getElementById('winterRewards');
+  if (!rewardsList) return;
+  rewardsList.innerHTML = '';
+  WINTER_REWARDS.forEach(r=>{
+    const claimed = (state.winter.claimed || []).includes(r.id);
+    const canClaim = snowballs >= r.snowballs && !claimed;
+    const d = document.createElement('div');
+    d.className = 'winter-reward' + (claimed ? ' claimed' : '');
+    d.innerHTML = `
+      <div class="r-icon">${r.icon}</div>
+      <div class="r-name">${r.name}</div>
+      <div class="r-req">${r.snowballs} ⛄</div>
+      <button class="r-btn" ${!canClaim ? 'disabled' : ''} onclick="claimWinterReward('${r.id}')">
+        ${claimed ? '✓ Получено' : (canClaim ? 'Забрать' : 'Мало снежков')}
+      </button>
+    `;
+    rewardsList.appendChild(d);
+  });
+}
+function claimWinterReward(rewardId){
+  const r = WINTER_REWARDS.find(x=>x.id===rewardId);
+  if (!r) return;
+  if ((state.winter.claimed || []).includes(rewardId)) return;
+  if ((state.winter.snowballs || 0) < r.snowballs){ showToast('Мало снежков!'); return; }
+  state.winter.snowballs -= r.snowballs;
+  state.winter.claimed = state.winter.claimed || [];
+  state.winter.claimed.push(rewardId);
+  if (r.type === 'money'){
+    state.balance += r.value;
+    playSell();
+    showToast('🎉 +' + fmt(r.value) + ' ₽!');
+  } else if (r.type === 'absolute'){
+    state.sims.push({
+      number: '+7 (' + digits(3) + ') 9999999',
+      country: 'ru', operator: 'МТС', rarity: 'absolute',
+      value: 100000000, used: false,
+    });
+    playAbsolute(); launchConfetti();
+    showToast('💎 АБСОЛЮТНЫЙ номер!', 3000);
+  }
+  save(); updateUI();
+  renderWinter();
+}
+
+// ================= COLLECTION =================
+function openCollectionOverlay(){
+  renderCollection();
+  closeOverlay('menuOverlay');
+  openOverlay('collOverlay');
+}
+function renderCollection(){
+  const list = document.getElementById('collList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (state.collection.length === 0){
+    list.innerHTML = '<div class="empty">Пока пусто. Крути номера!</div>';
+    return;
+  }
+  const sorted = [...state.collection].reverse();
+  sorted.forEach(item=>{
+    const rar = getRarityById(item.rarity);
+    const country = COUNTRIES[item.country] || COUNTRIES.ru;
+    const d = document.createElement('div');
+    d.className = 'coll-item';
+    d.style.setProperty('--rc', rar.color);
+    d.innerHTML = `
+      <div style="flex:1;">
+        <div class="coll-num">${item.number}</div>
+        <div class="coll-rarity" style="color:${rar.color}">${rar.name} · ${country.flag}</div>
+      </div>
+      <div class="coll-price">${fmt(item.price)} ₽</div>
+    `;
+    list.appendChild(d);
+  });
+}
+
+// ================= BIZ =================
+function openBizOverlay(){
+  renderBiz();
+  closeOverlay('menuOverlay');
+  openOverlay('bizOverlay');
+}
+function renderBiz(){
+  const list = document.getElementById('bizList');
+  if (!list) return;
+  list.innerHTML = '';
+  // Собираем доход
+  collectBizIncome();
+  BUSINESS_TYPES.forEach(b=>{
+    const owned = state.business.find(x=>x.id===b.id);
+    const d = document.createElement('div');
+    d.className = 'biz-card' + (owned ? ' owned' : '');
+    d.innerHTML = `
+      <div class="biz-icon">${b.icon}</div>
+      <div class="biz-info">
+        <div class="biz-name">${b.name}</div>
+        <div class="biz-desc">${owned ? 'Доход: +' + fmt(b.incomePerHour) + ' ₽/час' : 'Цена: ' + fmt(b.price) + ' ₽'}</div>
+        <div class="biz-income">💰 ${fmt(b.incomePerHour)} ₽ / час</div>
+      </div>
+      <button class="biz-buy" ${owned || state.balance < b.price ? 'disabled' : ''} onclick="buyBiz('${b.id}')">
+        ${owned ? '✓ Куплено' : 'Купить'}
+      </button>
+    `;
+    list.appendChild(d);
+  });
+}
+function buyBiz(bizId){
+  const b = BUSINESS_TYPES.find(x=>x.id===bizId);
+  if (!b) return;
+  if (state.business.find(x=>x.id===bizId)){ showToast('Уже куплено!'); return; }
+  if (state.balance < b.price){ showToast('Не хватает ' + fmt(b.price) + ' ₽'); return; }
+  state.balance -= b.price;
+  state.business.push({ id:b.id, boughtAt:Date.now(), lastCollect:Date.now() });
+  playWin();
+  showToast('🎉 Куплено: ' + b.name);
+  save(); updateUI();
+  renderBiz();
+}
+function collectBizIncome(){
+  if (!state.business || state.business.length === 0) return;
+  const now = Date.now();
+  let total = 0;
+  state.business.forEach(b=>{
+    const type = BUSINESS_TYPES.find(x=>x.id===b.id);
+    if (!type) return;
+    const hours = (now - (b.lastCollect || now)) / 3600000;
+    const income = Math.floor(type.incomePerHour * hours);
+    if (income > 0){
+      total += income;
+      b.lastCollect = now;
+    }
+  });
+  if (total > 0){
+    state.balance += total;
+    showToast('💼 Бизнес принёс: +' + fmt(total) + ' ₽');
+    save(); updateUI();
+  }
+}
+
+// ================= ACHIEVEMENTS =================
+function openAchievementsOverlay(){
+  renderAchievements();
+  closeOverlay('menuOverlay');
+  openOverlay('achOverlay');
+}
+function getAchProgress(a){
+  switch(a.id){
+    case 'spin1':      return state.spins;
+    case 'spin100':    return state.spins;
+    case 'spin1000':   return state.spins;
+    case 'spin5000':   return state.spins;
+    case 'phone1':     return state.phones.length;
+    case 'phone10':    return state.phones.length;
+    case 'phone50':    return state.phones.length;
+    case 'sim1':       return state.sims.length;
+    case 'sim10':      return state.sims.length;
+    case 'sold1':      return state.tasks.sold || 0;
+    case 'sold10':     return state.tasks.sold || 0;
+    case 'level5':     return state.level;
+    case 'level10':    return state.level;
+    case 'level25':    return state.level;
+    case 'bal100k':    return state.balance;
+    case 'bal1m':      return state.balance;
+    case 'bal10m':     return state.balance;
+    case 'legendary1': return state.collection.filter(c=>c.rarity==='legendary').length;
+    case 'absolute1':  return state.collection.filter(c=>c.rarity==='absolute').length;
+    case 'pet10':      return state.pet?.level || 1;
+    default: return 0;
+  }
+}
+function renderAchievements(){
+  const g = document.getElementById('achGrid');
+  if (!g) return;
+  g.innerHTML = '';
+  ACHIEVEMENTS.forEach(a=>{
+    const claimed = (state.achievements || []).includes(a.id);
+    const progress = getAchProgress(a);
+    const done = progress >= a.target;
+    const d = document.createElement('div');
+    d.className = 'ach-card' + (done ? ' done' : '');
+    d.innerHTML = `
+      ${claimed ? '<div class="ach-claimed">✓</div>' : ''}
+      <div class="ach-icon">${a.icon}</div>
+      <div class="ach-name">${a.name}</div>
+      <div class="ach-desc">${a.desc}</div>
+      <div class="ach-progress">${Math.min(progress, a.target)} / ${a.target}</div>
+      ${done && !claimed ? `<button class="task-claim" style="margin-top:8px;width:100%;" onclick="claimAchievement('${a.id}', ${a.reward})">Забрать +${fmt(a.reward)} ₽</button>` : ''}
+    `;
+    g.appendChild(d);
+  });
+}
+function claimAchievement(id, reward){
+  if ((state.achievements || []).includes(id)) return;
+  const a = ACHIEVEMENTS.find(x=>x.id===id);
+  if (!a || getAchProgress(a) < a.target) return;
+  state.achievements.push(id);
+  state.balance += reward;
+  playWin();
+  showToast('🏆 Достижение: ' + a.name + ' +' + fmt(reward) + ' ₽');
+  save(); updateUI();
+  renderAchievements();
+}
+function checkAchievements(){
+  // Просто триггерим обновление бейджа (если надо)
+}
+
+// ================= INIT =================
+updateUI();
+document.getElementById('numRegion').textContent =
+  COUNTRIES[state.country].flag + ' ' + COUNTRIES[state.country].name;
+updateSpinBtnLabel();
+ensureTasksToday();
+
+setTimeout(()=>{
+  if (!state.subscribed){
+    document.getElementById('subscribePopup').classList.add('show');
+  }
+}, 1500);
+
+setInterval(()=>{
+  renderActiveBoosts();
+  if (document.getElementById('winterOverlay').classList.contains('show')){
+    renderWinter();
+  }
+}, 1000);
+</script>
+</body>
+</html>
+ 
