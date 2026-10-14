@@ -107,11 +107,6 @@ body {
   50% { transform:translateX(8px); }
   75% { transform:translateX(-5px); }
 }
-.number-card::before {
-  content:''; position:absolute; inset:0;
-  background:radial-gradient(circle at top right,rgba(59,130,246,.15),transparent 60%);
-  pointer-events:none;
-}
 .number-big {
   font-size:26px; font-weight:900; letter-spacing:1px;
   margin:8px 0 10px; word-break:break-word;
@@ -137,8 +132,9 @@ body {
 }
 .stake-btn.active { background:linear-gradient(135deg,#8a2be2,#ff0080); }
 
+.spin-row { display:flex; gap:8px; margin-bottom:12px; }
 .spin-btn {
-  width:100%; padding:18px; border:none; border-radius:18px;
+  flex:1; padding:18px; border:none; border-radius:18px;
   font-size:17px; font-weight:900; color:#000; cursor:pointer;
   letter-spacing:1px;
   background:linear-gradient(90deg,#00ff88,#00bfff,#8a2be2,#ff0080,#ff8c00,#ffd700,#00ff88);
@@ -149,13 +145,21 @@ body {
 }
 .spin-btn:active { transform:scale(.97); }
 .spin-btn:disabled { opacity:.5; animation-play-state:paused; }
+.auto-btn {
+  width:70px; padding:18px 8px; border:none; border-radius:18px;
+  font-size:13px; font-weight:900; color:#000; cursor:pointer;
+  background:linear-gradient(135deg,#2ecc71,#00ff88);
+  transition:transform .1s;
+}
+.auto-btn:active { transform:scale(.97); }
+.auto-btn.active { background:linear-gradient(135deg,#ff3b5c,#ff0080); color:#fff; }
 @keyframes rainbow { 0% { background-position:0% 50%; } 100% { background-position:400% 50%; } }
 
 /* ===== BOTTOM NAV ===== */
 .bottom-nav {
   position:fixed; bottom:0; left:0; right:0; z-index:20;
   background:rgba(10,10,14,.95); backdrop-filter:blur(20px);
-  display:flex; padding:8px 6px 12px;
+  display:flex; padding:8px 4px 12px;
   border-top:1px solid rgba(255,255,255,.06);
 }
 .nav-item {
@@ -195,7 +199,9 @@ body {
   background:linear-gradient(135deg,#2ecc71,#00bfff);
   display:flex; align-items:center; justify-content:center;
   font-size:22px; font-weight:900;
+  overflow:hidden;
 }
+.avatar img { width:100%; height:100%; object-fit:cover; }
 .profile-info { flex:1; }
 .profile-level { font-size:18px; font-weight:900; }
 .profile-exp { font-size:11px; color:#888; margin-top:3px; }
@@ -282,12 +288,27 @@ body {
   height:32px;
 }
 .phone-model.feature .keys span { background:rgba(255,255,255,.15); border-radius:2px; }
+.phone-model.feature .antenna {
+  position:absolute; top:-8px; right:6px;
+  width:3px; height:10px; background:rgba(255,255,255,.3);
+  border-radius:2px;
+}
 .phone-model.lux {
   background:linear-gradient(135deg,#ffd700,#b8860b);
   border-color:#fff3b0;
   box-shadow:0 6px 20px rgba(255,215,0,.4), inset 0 1px 0 rgba(255,255,255,.5);
 }
 .phone-model.lux .screen { background:linear-gradient(180deg,#0a0a15,#2a1a30); box-shadow:inset 0 0 12px rgba(255,215,0,.3); }
+.phone-model.lux::after {
+  content:''; position:absolute; top:8px; left:50%; transform:translateX(-50%);
+  width:6px; height:6px; border-radius:50%;
+  background:radial-gradient(circle,#fff,#00bfff);
+  box-shadow:0 0 6px #00bfff;
+}
+.phone-model.fold {
+  width:60px; height:110px; border-radius:14px;
+}
+.phone-model.fold .screen { top:12px; left:8px; right:8px; bottom:12px; }
 
 /* ===== PHONE GRID ===== */
 .phone-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -300,6 +321,12 @@ body {
 .phone-card:active { transform:scale(.96); }
 .phone-card .name { font-size:12px; font-weight:800; }
 .phone-card .price { font-size:12px; font-weight:800; }
+.phone-card .sell-btn {
+  width:100%; padding:8px; border:none; border-radius:8px;
+  background:linear-gradient(135deg,#ff3b5c,#ff0080);
+  color:#fff; font-weight:800; font-size:11px; cursor:pointer;
+  margin-top:4px;
+}
 .sim-slot {
   margin-top:4px; padding:6px 8px; border-radius:8px;
   background:rgba(255,255,255,.05); font-size:10px; color:#666;
@@ -361,6 +388,19 @@ body {
 .country-btn .flag { font-size:22px; }
 
 /* ===== POPUP ===== */
+.popup {
+  position:fixed; bottom:0; left:0; right:0; z-index:200;
+  background:#1a1a20; border-radius:24px 24px 0 0; padding:22px;
+  transform:translateY(100%); transition:transform .3s;
+  max-height:80vh; overflow-y:auto;
+}
+.popup.show { transform:translateY(0); }
+.popup-handle {
+  width:40px; height:4px; background:rgba(255,255,255,.2);
+  border-radius:2px; margin:0 auto 18px;
+}
+.popup-title { font-size:19px; font-weight:900; margin-bottom:8px; }
+.popup-text { font-size:14px; color:#aaa; line-height:1.5; margin-bottom:18px; }
 .popup-btn {
   width:100%; padding:16px; border:none; border-radius:14px;
   font-size:15px; font-weight:900; cursor:pointer;
@@ -368,10 +408,14 @@ body {
   background-size:300% 100%;
   animation:rainbow 4s linear infinite;
   color:#fff;
+  margin-bottom:8px;
 }
 .popup-btn:active { transform:scale(.97); }
 .popup-btn:disabled { opacity:.5; animation-play-state:paused; }
-.popup-text { font-size:14px; color:#aaa; line-height:1.5; margin-bottom:18px; }
+.popup-btn.green { background:linear-gradient(90deg,#2ecc71,#00ff88); }
+.popup-btn.gold { background:linear-gradient(90deg,#ffd700,#ff9500); color:#000; }
+.popup-btn.red { background:linear-gradient(90deg,#ff3b5c,#ff0080); }
+
 .ref-link {
   background:rgba(30,30,38,.9); border-radius:12px; padding:14px;
   font-size:12px; word-break:break-all; color:#8a2be2;
@@ -444,6 +488,73 @@ body {
   border:2px solid transparent; transition:border-color .15s;
 }
 .banner-opt.active { border-color:#ffd700; }
+
+/* ===== TASK CARD ===== */
+.task-card {
+  background:rgba(25,25,32,.9); border-radius:16px; padding:14px;
+  margin-bottom:10px; display:flex; align-items:center; gap:12px;
+  border:1px solid rgba(255,255,255,.06);
+}
+.task-card.done { border-color:#2ecc71; background:rgba(46,204,113,.1); }
+.task-icon { font-size:28px; }
+.task-info { flex:1; }
+.task-name { font-size:13px; font-weight:800; margin-bottom:4px; }
+.task-progress { font-size:11px; color:#888; }
+.task-reward { font-size:12px; font-weight:800; color:#ffd700; }
+.task-claim {
+  padding:8px 14px; border:none; border-radius:10px;
+  background:linear-gradient(135deg,#2ecc71,#00ff88);
+  color:#000; font-weight:900; font-size:11px; cursor:pointer;
+}
+.task-claim:disabled { opacity:.4; cursor:default; }
+
+/* ===== EVENT CARD ===== */
+.event-card {
+  background:linear-gradient(135deg,rgba(255,0,128,.15),rgba(138,43,226,.15));
+  border-radius:16px; padding:16px; margin-bottom:12px;
+  border:1px solid rgba(255,215,0,.3);
+  display:flex; align-items:center; gap:12px;
+}
+.event-icon { font-size:32px; }
+.event-info { flex:1; }
+.event-name { font-size:14px; font-weight:900; margin-bottom:4px; }
+.event-desc { font-size:11px; color:#aaa; margin-bottom:4px; }
+.event-timer { font-size:11px; color:#ffd700; font-weight:800; }
+.event-btn {
+  padding:10px 14px; border:none; border-radius:10px;
+  background:linear-gradient(135deg,#ffd700,#ff9500);
+  color:#000; font-weight:900; font-size:11px; cursor:pointer;
+}
+
+/* ===== BOOST CARD ===== */
+.boost-card {
+  background:rgba(25,25,32,.9); border-radius:16px; padding:14px;
+  margin-bottom:10px; display:flex; align-items:center; gap:12px;
+  border:1px solid rgba(255,255,255,.06);
+}
+.boost-icon { font-size:28px; }
+.boost-info { flex:1; }
+.boost-name { font-size:13px; font-weight:800; margin-bottom:4px; }
+.boost-desc { font-size:11px; color:#888; }
+.boost-buy {
+  padding:8px 14px; border:none; border-radius:10px;
+  background:linear-gradient(135deg,#8a2be2,#ff0080);
+  color:#fff; font-weight:900; font-size:11px; cursor:pointer;
+}
+
+/* ===== ACTIVE BOOSTS BAR ===== */
+.active-boosts {
+  display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;
+  justify-content:center;
+}
+.boost-pill {
+  padding:6px 12px; border-radius:20px;
+  background:linear-gradient(135deg,#ffd700,#ff9500);
+  color:#000; font-size:11px; font-weight:900;
+  display:flex; align-items:center; gap:4px;
+}
+.boost-pill.green { background:linear-gradient(135deg,#2ecc71,#00ff88); }
+.boost-pill.purple { background:linear-gradient(135deg,#8a2be2,#ff0080); color:#fff; }
 </style>
 </head>
 <body>
@@ -464,7 +575,7 @@ body {
   <div class="clover-pill">
     <span>🍀</span><span id="cloverCount">0</span>
   </div>
-  <div class="balance-box">
+  <div class="balance-box" id="balanceBox">
     <div class="lbl">Баланс</div>
     <div class="val" id="balance">1 000 ₽</div>
   </div>
@@ -474,11 +585,14 @@ body {
 <div class="tabs">
   <button class="tab active" id="tabNumbers" onclick="switchTab('numbers')">Номера</button>
   <button class="tab" id="tabPhones" onclick="switchTab('phones')">Телефоны</button>
+  <button class="tab" id="tabSims" onclick="switchTab('sims')">Симки</button>
   <button class="tab gold" onclick="openShopOverlay()">⭐ Магазин</button>
 </div>
 
 <!-- MAIN -->
 <div class="main" id="mainArea">
+  <div class="active-boosts" id="activeBoosts"></div>
+
   <div class="rarity-bar">
     <div>
       <div class="rarity-name" id="rarityName" style="color:#888;">Обычный</div>
@@ -495,7 +609,7 @@ body {
     <div class="number-region" id="numRegion">🇷🇺 Россия</div>
     <div class="beauty-list" id="beautyList"></div>
     <div class="actions">
-      <button onclick="saveToPhone()">📱 В телефон</button>
+      <button onclick="saveToPhone()">📱 Сохранить</button>
       <button onclick="shareNum()">↗</button>
     </div>
   </div>
@@ -506,7 +620,10 @@ body {
     <button class="stake-btn" id="stake10" onclick="setStake(10)">×10</button>
   </div>
 
-  <button class="spin-btn" id="spinBtn" onclick="spin()">КРУТИТЬ (бесплатно)</button>
+  <div class="spin-row">
+    <button class="spin-btn" id="spinBtn" onclick="spin()">КРУТИТЬ (бесплатно)</button>
+    <button class="auto-btn" id="autoBtn" onclick="toggleAuto()">АВТО</button>
+  </div>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -517,11 +634,12 @@ body {
   <div class="nav-item" onclick="switchTab('phones')">
     <div class="ic">📱</div><div>Телефоны</div>
   </div>
-  <div class="nav-item" onclick="openShopOverlay()">
-    <div class="ic">🛒</div><div>Магазин</div>
+  <div class="nav-item" onclick="switchTab('sims')">
+    <div class="ic">📶</div><div>Симки</div>
   </div>
-  <div class="nav-item" onclick="openFriendsOverlay()">
-    <div class="ic">👥</div><div>Друзья</div>
+  <div class="nav-item" onclick="openOverlay('tasksOverlay')">
+    <div class="ic">✅</div><div>Задания</div>
+    <div class="badge" id="tasksBadge" style="position:absolute;top:4px;right:14px;min-width:18px;height:18px;border-radius:9px;background:#ff3b5c;color:#fff;font-size:10px;font-weight:900;display:none;align-items:center;justify-content:center;">!</div>
   </div>
   <div class="nav-item" onclick="openOverlay('menuOverlay')">
     <div class="ic">⋯</div><div>Ещё</div>
@@ -563,6 +681,19 @@ body {
       <div class="cat-icon">🎡</div>
       <div class="cat-label">Колесо</div>
     </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#00bfff,#8a2be2);--bgic:rgba(0,191,255,.15);" onclick="openOverlay('eventsOverlay')">
+      <div class="cat-icon">🎉</div>
+      <div class="cat-label">Ивенты</div>
+      <div class="cat-badge" id="eventsBadge">!</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#8a2be2,#ff0080);--bgic:rgba(138,43,226,.15);" onclick="openOverlay('boostersOverlay')">
+      <div class="cat-icon">⚡</div>
+      <div class="cat-label">Бусты</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#00ff88,#00bfff);--bgic:rgba(0,255,136,.15);" onclick="openOverlay('tasksOverlay')">
+      <div class="cat-icon">✅</div>
+      <div class="cat-label">Задания</div>
+    </div>
     <div class="cat-card" style="--grad:linear-gradient(135deg,#00bfff,#8a2be2);--bgic:rgba(0,191,255,.15);" onclick="openFriendsOverlay()">
       <div class="cat-icon">👥</div>
       <div class="cat-label">Друзья</div>
@@ -575,6 +706,10 @@ body {
     <div class="cat-card" style="--grad:linear-gradient(135deg,#8a2be2,#00bfff);--bgic:rgba(138,43,226,.15);" onclick="openCountriesOverlay()">
       <div class="cat-icon">🌍</div>
       <div class="cat-label">Страны</div>
+    </div>
+    <div class="cat-card" style="--grad:linear-gradient(135deg,#ffd700,#ff0080);--bgic:rgba(255,215,0,.15);" onclick="openSubscribePopup()">
+      <div class="cat-icon">📢</div>
+      <div class="cat-label">Канал</div>
     </div>
   </div>
 </div>
@@ -615,6 +750,15 @@ body {
     <button class="close-btn" onclick="closeOverlay('phonesOverlay')">✕</button>
   </div>
   <div class="phone-grid" id="phonesGrid"></div>
+</div>
+
+<!-- SIMS OVERLAY -->
+<div class="overlay" id="simsOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">Мои симки</div>
+    <button class="close-btn" onclick="closeOverlay('simsOverlay')">✕</button>
+  </div>
+  <div class="phone-grid" id="simsGrid"></div>
 </div>
 
 <!-- SHOP OVERLAY -->
@@ -660,7 +804,7 @@ body {
     <button class="close-btn" onclick="closeOverlay('friendsOverlay')">✕</button>
   </div>
   <div class="popup-text">Пригласи 5 друзей и получи <b style="color:#8a2be2;">Абсолютный номер</b>!</div>
-  <div class="ref-link" id="refLink">https://t.me/your_bot?start=ref</div>
+  <div class="ref-link" id="refLink">https://t.me/AppNomerokBot?start=ref</div>
   <button class="popup-btn" onclick="copyRef()">Скопировать ссылку</button>
   <div class="popup-text" style="margin-top:16px;">Приглашено: <b id="refCount">0</b> / 5</div>
 </div>
@@ -685,7 +829,66 @@ body {
   <button class="popup-btn" onclick="claimDaily()" id="dailyBtn">Забрать</button>
 </div>
 
+<!-- TASKS OVERLAY -->
+<div class="overlay" id="tasksOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">✅ Ежедневные задания</div>
+    <button class="close-btn" onclick="closeOverlay('tasksOverlay')">✕</button>
+  </div>
+  <div class="popup-text">Выполняй задания и получай награды! Обновляются каждый день.</div>
+  <div id="tasksList"></div>
+</div>
+
+<!-- EVENTS OVERLAY -->
+<div class="overlay" id="eventsOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">🎉 Ивенты</div>
+    <button class="close-btn" onclick="closeOverlay('eventsOverlay')">✕</button>
+  </div>
+  <div class="popup-text">События действуют ограниченное время!</div>
+  <div id="eventsList"></div>
+</div>
+
+<!-- BOOSTERS OVERLAY -->
+<div class="overlay" id="boostersOverlay">
+  <div class="overlay-header">
+    <div class="overlay-title">⚡ Бусты</div>
+    <button class="close-btn" onclick="closeOverlay('boostersOverlay')">✕</button>
+  </div>
+  <div class="popup-text">Ускоряй развитие! Покупай за звёзды (виртуально) или за деньги.</div>
+  <div id="boostersList"></div>
+</div>
+
+<!-- SUBSCRIBE POPUP -->
+<div class="popup" id="subscribePopup">
+  <div class="popup-handle"></div>
+  <div class="popup-title">📢 Подпишись на канал</div>
+  <div class="popup-text">Чтобы крутить номера, подпишись на наш канал <b>@AppNomerokKanal</b>! Там новости, ивенты и бонусы 🎁</div>
+  <button class="popup-btn" onclick="openChannel()">📢 Открыть канал</button>
+  <button class="popup-btn green" onclick="confirmSubscribe()">✅ Я подписался</button>
+</div>
+
+<!-- ДЕМО (СКРЫТЫЙ) -->
+<div class="popup" id="demoPopup">
+  <div class="popup-handle"></div>
+  <div class="popup-title">🎬 Демо-режим</div>
+  <div class="popup-text">Выбери номер для съёмки видео. Все круты будут давать выбранный номер.</div>
+  <div id="demoList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
+  <button class="popup-btn red" onclick="disableDemo()">❌ Выключить демо</button>
+</div>
+
 <script>
+// ================= TELEGRAM USER =================
+let tgUser = null;
+try {
+  if (window.Telegram && window.Telegram.WebApp){
+    const u = window.Telegram.WebApp.initDataUnsafe?.user;
+    if (u) tgUser = u;
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand();
+  }
+} catch(e){}
+
 // ================= STATE =================
 const state = {
   balance: 1000,
@@ -702,22 +905,48 @@ const state = {
   lastDaily: 0,
   refCount: 0,
   currentNumber: null,
-  userName: 'Игрок',
+  userName: tgUser?.first_name || 'Игрок',
+  userPhoto: tgUser?.photo_url || null,
   banner: 0,
   soundOn: true,
+  subscribed: false,
+  subscribedBoostUntil: 0,
+  // Бусты
+  boosts: {
+    luck: 0,        // timestamp окончания x2 удачи
+    income: 0,      // timestamp окончания x2 дохода
+    fastSpin: 0,    // timestamp окончания быстрого крута
+    autoSpin: 0,    // timestamp окончания автокрута
+  },
+  // Задания (ежедневные)
+  tasks: {
+    date: null,
+    spins: 0,
+    boxes: 0,
+    sold: 0,
+    money: 0,
+    claimed: [], // id выполненных
+  },
+  // Демо-режим
+  demoMode: false,
+  demoNumber: null,
+  demoClicks: 0,
 };
 
 function save(){
-  try { localStorage.setItem('nom_state_v3', JSON.stringify(state)); } catch(e){}
+  try { localStorage.setItem('nom_state_v4', JSON.stringify(state)); } catch(e){}
 }
 function load(){
   try {
-    const s = localStorage.getItem('nom_state_v3');
+    const s = localStorage.getItem('nom_state_v4');
     if (s){
       const p = JSON.parse(s);
       Object.assign(state, p);
       if (!Array.isArray(state.phones)) state.phones = [];
       if (!Array.isArray(state.sims)) state.sims = [];
+      if (!state.boosts) state.boosts = { luck:0, income:0, fastSpin:0, autoSpin:0 };
+      if (!state.tasks) state.tasks = { date:null, spins:0, boxes:0, sold:0, money:0, claimed:[] };
+      if (!Array.isArray(state.tasks.claimed)) state.tasks.claimed = [];
     }
   } catch(e){}
 }
@@ -743,7 +972,7 @@ const COUNTRIES = {
   br: { name:'Бразилия',   flag:'🇧🇷', code:'+55',  ops:['Vivo','Claro','TIM'],                gen:()=>`+55 (${digits(2)}) ${digits(4)}-${digits(4)}` },
 };
 
-// ================= RARITIES (6 штук, добавил АБСОЛЮТ) =================
+// ================= RARITIES =================
 const RARITIES = [
   { id:'common',    name:'Обычный',     color:'#888888', weight:55, mult:1,    dots:1 },
   { id:'rare',      name:'Редкий',      color:'#3b82f6', weight:25, mult:2,    dots:2 },
@@ -753,44 +982,45 @@ const RARITIES = [
   { id:'absolute',  name:'АБСОЛЮТНЫЙ',  color:'#ff00ff', weight:0.3,mult:200,  dots:6 },
 ];
 
-// ================= PHONES (23 штуки, +10 новых) =================
+// ================= PHONES =================
 const PHONES = [
-  { name:'Nokia 3310',        icon:'📞', rarity:'common',    price:500,    model:'feature' },
-  { name:'Siemens A50',       icon:'📞', rarity:'common',    price:700,    model:'feature' },
-  { name:'Motorola C115',     icon:'📞', rarity:'common',    price:900,    model:'feature' },
-  { name:'Samsung SGH',       icon:'📞', rarity:'rare',      price:2500,   model:'feature' },
-  { name:'Sony Ericsson',     icon:'📞', rarity:'rare',      price:3000,   model:'feature' },
-  { name:'Nokia N95',         icon:'📞', rarity:'rare',      price:4000,   model:'feature' },
-  { name:'iPhone 4',          icon:'📱', rarity:'rare',      price:5000,   model:'smart' },
-  { name:'iPhone 6',          icon:'📱', rarity:'epic',      price:12000,  model:'smart' },
-  { name:'Samsung S8',        icon:'📱', rarity:'epic',      price:15000,  model:'smart' },
-  { name:'iPhone X',          icon:'📱', rarity:'epic',      price:25000,  model:'smart' },
-  { name:'Xiaomi Mi 9',       icon:'📱', rarity:'epic',      price:18000,  model:'smart' },
-  { name:'Google Pixel 3',    icon:'📱', rarity:'epic',      price:20000,  model:'smart' },
-  { name:'Huawei P30',        icon:'📱', rarity:'epic',      price:22000,  model:'smart' },
-  { name:'iPhone 14 Pro',     icon:'📱', rarity:'mythic',    price:80000,  model:'smart' },
-  { name:'Samsung S23 Ultra', icon:'📱', rarity:'mythic',    price:90000,  model:'smart' },
-  { name:'OnePlus 11',        icon:'📱', rarity:'mythic',    price:70000,  model:'smart' },
-  { name:'Google Pixel 7',    icon:'📱', rarity:'mythic',    price:75000,  model:'smart' },
-  { name:'Asus ROG Phone',    icon:'📱', rarity:'mythic',    price:95000,  model:'smart' },
-  { name:'Oppo Find X6',      icon:'📱', rarity:'mythic',    price:85000,  model:'smart' },
-  { name:'iPhone 15 Pro Max', icon:'📱', rarity:'legendary', price:200000, model:'smart' },
-  { name:'Vertu Signature',   icon:'💎', rarity:'legendary', price:500000, model:'lux' },
-  { name:'Vertu Diamond',     icon:'💎', rarity:'absolute',  price:1500000,model:'lux' },
-  { name:'Vertu Constellation',icon:'💎',rarity:'absolute',  price:2000000,model:'lux' },
+  { name:'Nokia 3310',         icon:'📞', rarity:'common',    price:500,    model:'feature' },
+  { name:'Siemens A50',        icon:'📞', rarity:'common',    price:700,    model:'feature' },
+  { name:'Motorola C115',      icon:'📞', rarity:'common',    price:900,    model:'feature' },
+  { name:'Samsung SGH',        icon:'📞', rarity:'rare',      price:2500,   model:'feature' },
+  { name:'Sony Ericsson',      icon:'📞', rarity:'rare',      price:3000,   model:'feature' },
+  { name:'Nokia N95',          icon:'📞', rarity:'rare',      price:4000,   model:'feature' },
+  { name:'iPhone 4',           icon:'📱', rarity:'rare',      price:5000,   model:'smart' },
+  { name:'iPhone 6',           icon:'📱', rarity:'epic',      price:12000,  model:'smart' },
+  { name:'Samsung S8',         icon:'📱', rarity:'epic',      price:15000,  model:'smart' },
+  { name:'iPhone X',           icon:'📱', rarity:'epic',      price:25000,  model:'smart' },
+  { name:'Xiaomi Mi 9',        icon:'📱', rarity:'epic',      price:18000,  model:'smart' },
+  { name:'Google Pixel 3',     icon:'📱', rarity:'epic',      price:20000,  model:'smart' },
+  { name:'Huawei P30',         icon:'📱', rarity:'epic',      price:22000,  model:'smart' },
+  { name:'Samsung Fold',       icon:'📱', rarity:'epic',      price:30000,  model:'fold' },
+  { name:'iPhone 14 Pro',      icon:'📱', rarity:'mythic',    price:80000,  model:'smart' },
+  { name:'Samsung S23 Ultra',  icon:'📱', rarity:'mythic',    price:90000,  model:'smart' },
+  { name:'OnePlus 11',         icon:'📱', rarity:'mythic',    price:70000,  model:'smart' },
+  { name:'Google Pixel 7',     icon:'📱', rarity:'mythic',    price:75000,  model:'smart' },
+  { name:'Asus ROG Phone',     icon:'📱', rarity:'mythic',    price:95000,  model:'smart' },
+  { name:'Oppo Find X6',       icon:'📱', rarity:'mythic',    price:85000,  model:'smart' },
+  { name:'iPhone 15 Pro Max',  icon:'📱', rarity:'legendary', price:200000, model:'smart' },
+  { name:'Vertu Signature',    icon:'💎', rarity:'legendary', price:500000, model:'lux' },
+  { name:'Vertu Diamond',      icon:'💎', rarity:'absolute',  price:1500000,model:'lux' },
+  { name:'Vertu Constellation',icon:'💎', rarity:'absolute',  price:2000000,model:'lux' },
 ];
 
-// ================= BOXES (сделал дешевле для теста) =================
+// ================= BOXES =================
 const BOXES = [
-  { id:'common',    name:'Обычная',     emoji:'📦', price:500,    color:'#888888', chances:{ common:.90, rare:.10 } },
-  { id:'rare',      name:'Редкая',      emoji:'📦', price:2000,   color:'#3b82f6', chances:{ common:.55, rare:.35, epic:.10 } },
-  { id:'epic',      name:'Эпическая',   emoji:'📦', price:8000,   color:'#a855f7', chances:{ rare:.40, epic:.45, mythic:.15 } },
-  { id:'mythic',    name:'Мифическая',  emoji:'📦', price:30000,  color:'#ef4444', chances:{ epic:.45, mythic:.45, legendary:.10 } },
-  { id:'legendary', name:'Легендарная', emoji:'📦', price:150000, color:'#ffd700', chances:{ epic:.30, mythic:.55, legendary:.15 } },
-  { id:'absolute',  name:'Абсолютная',  emoji:'💎', price:1000000,color:'#ff00ff', chances:{ legendary:.70, absolute:.30 } },
+  { id:'common',    name:'Обычная',     emoji:'📦', price:500,     color:'#888888', chances:{ common:.90, rare:.10 } },
+  { id:'rare',      name:'Редкая',      emoji:'📦', price:2000,    color:'#3b82f6', chances:{ common:.55, rare:.35, epic:.10 } },
+  { id:'epic',      name:'Эпическая',   emoji:'📦', price:8000,    color:'#a855f7', chances:{ rare:.40, epic:.45, mythic:.15 } },
+  { id:'mythic',    name:'Мифическая',  emoji:'📦', price:30000,   color:'#ef4444', chances:{ epic:.45, mythic:.45, legendary:.10 } },
+  { id:'legendary', name:'Легендарная', emoji:'📦', price:150000,  color:'#ffd700', chances:{ epic:.30, mythic:.55, legendary:.15 } },
+  { id:'absolute',  name:'Абсолютная',  emoji:'💎', price:1000000, color:'#ff00ff', chances:{ legendary:.70, absolute:.30 } },
 ];
 
-// ================= BANNERS (10 градиентов для профиля) =================
+// ================= BANNERS =================
 const BANNERS = [
   'linear-gradient(135deg,#2ecc71,#00bfff)',
   'linear-gradient(135deg,#ff0080,#8a2be2)',
@@ -804,12 +1034,24 @@ const BANNERS = [
   'linear-gradient(135deg,#f12711,#f5af19)',
 ];
 
+// ================= TASKS TEMPLATES =================
+const TASK_TEMPLATES = [
+  { id:'spins10',  icon:'🎰', name:'Выкрути 10 номеров',     target:10,  reward:5000 },
+  { id:'spins50',  icon:'🎰', name:'Выкрути 50 номеров',     target:50,  reward:25000 },
+  { id:'boxes3',   icon:'📦', name:'Открой 3 коробки',        target:3,   reward:3000 },
+  { id:'boxes10',  icon:'📦', name:'Открой 10 коробок',       target:10,  reward:15000 },
+  { id:'sold1',    icon:'💸', name:'Продай 1 телефон',        target:1,   reward:2000 },
+  { id:'sold5',    icon:'💸', name:'Продай 5 телефонов',      target:5,   reward:12000 },
+  { id:'money50k', icon:'💰', name:'Заработай 50 000 ₽',      target:50000, reward:10000 },
+];
+
 // ================= HELPERS =================
 function rnd(n){ return Math.floor(Math.random()*n); }
 function digits(n){ let s=''; for(let i=0;i<n;i++) s+=rnd(10); return s; }
 function fmt(n){ return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' '); }
 function expForLevel(l){ return Math.floor(100 * Math.pow(l, 1.5)); }
 function getRarityById(id){ return RARITIES.find(r=>r.id===id) || RARITIES[0]; }
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
 
 // ================= SOUNDS =================
 let audioCtx = null;
@@ -898,9 +1140,8 @@ function playAbsolute(){
   }
 })();
 
-// ================= PHONE MODEL RENDER =================
+// ================= PHONE MODEL =================
 function renderPhoneModel(rarityId, modelType){
-  const r = getRarityById(rarityId);
   const colors = {
     common:    ['#555','#2a2a2a'],
     rare:      ['#3b82f6','#1e3a8a'],
@@ -913,9 +1154,11 @@ function renderPhoneModel(rarityId, modelType){
   const cls = 'phone-model ' + (modelType || 'smart');
   let inner = '';
   if (modelType === 'feature'){
-    inner = `<div class="screen"></div><div class="keys"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>`;
+    inner = `<div class="antenna"></div><div class="screen"></div><div class="keys"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>`;
   } else if (modelType === 'lux'){
     inner = `<div class="screen"></div><div class="notch"></div><div class="btn-home"></div>`;
+  } else if (modelType === 'fold'){
+    inner = `<div class="screen"></div><div class="notch"></div>`;
   } else {
     inner = `<div class="screen"></div><div class="notch"></div><div class="btn-home"></div><div class="btn-side"></div><div class="btn-side b2"></div>`;
   }
@@ -1001,19 +1244,93 @@ function evaluateNumber(number, countryCode){
     score += 2;
   }
 
-  // Определяем редкость
   let rarity;
-  if (score >= 40)      rarity = RARITIES[5]; // absolute
-  else if (score >= 25) rarity = RARITIES[4]; // legendary
-  else if (score >= 12) rarity = RARITIES[3]; // mythic
-  else if (score >= 5)  rarity = RARITIES[2]; // epic
-  else if (score >= 2)  rarity = RARITIES[1]; // rare
-  else                  rarity = RARITIES[0]; // common
+  if (score >= 40)      rarity = RARITIES[5];
+  else if (score >= 25) rarity = RARITIES[4];
+  else if (score >= 12) rarity = RARITIES[3];
+  else if (score >= 5)  rarity = RARITIES[2];
+  else if (score >= 2)  rarity = RARITIES[1];
+  else                  rarity = RARITIES[0];
 
   return { rarity, score, reasons };
 }
 
-// ================= UI =================
+// ================= PICK RARITY (с бустами) =================
+function pickRarityWithBoost(){
+  // Базовые веса
+  let weights = {
+    common: 55,
+    rare: 25,
+    epic: 13,
+    mythic: 5,
+    legendary: 2,
+    absolute: 0.3,
+  };
+
+  // Буст от подписки (+50% к редким)
+  if (state.subscribed){
+    weights.epic *= 1.5;
+    weights.mythic *= 1.5;
+    weights.legendary *= 1.5;
+    weights.absolute *= 1.5;
+  }
+
+  // Буст удачи (x2)
+  if (state.boosts.luck > Date.now()){
+    weights.epic *= 2;
+    weights.mythic *= 2;
+    weights.legendary *= 2;
+    weights.absolute *= 2;
+  }
+
+  const total = Object.values(weights).reduce((s,v)=>s+v,0);
+  let r = Math.random() * total;
+  for (const [id, w] of Object.entries(weights)){
+    r -= w;
+    if (r <= 0) return getRarityById(id);
+  }
+  return RARITIES[0];
+}
+
+// ================= GENERATE NUMBER BY RARITY =================
+function generateNumberByRarity(countryCode, rarityId){
+  const country = COUNTRIES[countryCode];
+  // Для легендарки и абсолюта — идеальные номера
+  if (rarityId === 'absolute'){
+    const allNums = [
+      `+7 (999) 999-99-99`,
+      `+7 (777) 777-77-77`,
+      `+7 (888) 888-88-88`,
+    ];
+    return { number: allNums[rnd(allNums.length)], reasons: [
+      { text:'9×9 подряд', mult: 200 },
+      { text:'топовое окончание 999', mult: 4 },
+    ]};
+  }
+  if (rarityId === 'legendary'){
+    // 2% шанс — идеальный номер
+    if (Math.random() < 0.3){
+      const allNums = [
+        `+7 (999) 999-99-99`,
+        `+7 (777) 777-77-77`,
+        `+7 (888) 888-88-88`,
+        `+7 (123) 456-78-90`,
+      ];
+      return { number: allNums[rnd(allNums.length)], reasons: [
+        { text:'9×9 подряд', mult: 200 },
+        { text:'топовое окончание 999', mult: 4 },
+      ]};
+    }
+    // Иначе — генерим красивое
+    const patterns = [
+      ()=>`+7 (${digits(3)}) ${digits(3)}-${digits(2)}-${digits(2)}`,
+    ];
+    return { number: country.gen(), reasons: [] };
+  }
+  return { number: country.gen(), reasons: [] };
+}
+
+// ================= UI UPDATE =================
 function updateUI(){
   document.getElementById('balance').textContent = fmt(state.balance)+' ₽';
   document.getElementById('balance2').textContent = fmt(state.balance)+' ₽';
@@ -1022,24 +1339,50 @@ function updateUI(){
   document.getElementById('expText').textContent = state.exp+' из '+state.expMax;
   document.getElementById('lvlBar').style.width = Math.min(state.exp/state.expMax*100,100)+'%';
   document.getElementById('cloverCount').textContent = state.clover;
-  const badge = document.getElementById('phoneBadge');
-  if (state.phones.length>0){ badge.textContent = state.phones.length; badge.style.display='flex'; }
-  else badge.style.display='none';
-  document.getElementById('refCount').textContent = state.refCount;
-  const canDaily = Date.now() - state.lastDaily > 20*3600*1000;
-  document.getElementById('dailyBadge').style.display = canDaily ? 'flex' : 'none';
 
-  // Profile
+  // Badges
+  const phoneBadge = document.getElementById('phoneBadge');
+  if (phoneBadge){
+    if (state.phones.length>0){ phoneBadge.textContent = state.phones.length; phoneBadge.style.display='flex'; }
+    else phoneBadge.style.display='none';
+  }
+  const refCount = document.getElementById('refCount');
+  if (refCount) refCount.textContent = state.refCount;
+
+  const canDaily = Date.now() - state.lastDaily > 20*3600*1000;
+  const dailyBadge = document.getElementById('dailyBadge');
+  if (dailyBadge) dailyBadge.style.display = canDaily ? 'flex' : 'none';
+
+  // Профиль
   if (document.getElementById('profileName')){
     document.getElementById('profileName').textContent = state.userName;
-    document.getElementById('profileAvatar').textContent = state.userName.charAt(0).toUpperCase();
-    document.getElementById('avatarLetter').textContent = state.userName.charAt(0).toUpperCase();
+    const av = document.getElementById('profileAvatar');
+    if (state.userPhoto){
+      av.innerHTML = `<img src="${state.userPhoto}" alt="">`;
+    } else {
+      av.textContent = state.userName.charAt(0).toUpperCase();
+    }
     document.getElementById('profileLvl').textContent = state.level;
     document.getElementById('stSpins').textContent = state.spins;
     document.getElementById('stPhones').textContent = state.phones.length;
     document.getElementById('stSims').textContent = state.sims.length;
     document.getElementById('stBal').textContent = fmt(state.balance)+' ₽';
   }
+  // Аватар в меню
+  const avMenu = document.getElementById('avatarLetter');
+  if (avMenu){
+    if (state.userPhoto){
+      avMenu.innerHTML = `<img src="${state.userPhoto}" alt="">`;
+    } else {
+      avMenu.textContent = state.userName.charAt(0).toUpperCase();
+    }
+  }
+
+  // Задания badge
+  updateTasksBadge();
+
+  // Активные бусты
+  renderActiveBoosts();
 }
 
 function showSnack(text){
@@ -1057,16 +1400,22 @@ function showToast(text, ms=2200){
 function switchTab(t){
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  closeOverlay('phonesOverlay');
+  closeOverlay('simsOverlay');
   if (t === 'numbers'){
     document.getElementById('tabNumbers').classList.add('active');
     document.querySelectorAll('.nav-item')[0].classList.add('active');
     document.getElementById('mainArea').style.display = 'flex';
-    closeOverlay('phonesOverlay');
-  } else {
+  } else if (t === 'phones'){
     document.getElementById('tabPhones').classList.add('active');
     document.querySelectorAll('.nav-item')[1].classList.add('active');
     document.getElementById('mainArea').style.display = 'none';
     openPhonesOverlay();
+  } else if (t === 'sims'){
+    document.getElementById('tabSims').classList.add('active');
+    document.querySelectorAll('.nav-item')[2].classList.add('active');
+    document.getElementById('mainArea').style.display = 'none';
+    openSimsOverlay();
   }
 }
 function openOverlay(id){ document.getElementById(id).classList.add('show'); }
@@ -1078,7 +1427,7 @@ function launchConfetti(){
   c.innerHTML = '';
   c.classList.add('show');
   const colors = ['#ff0080','#ffd700','#00ff88','#00bfff','#8a2be2','#ff3b5c'];
-  for (let i=0;i<60;i++){
+  for (let i=0;i<80;i++){
     const p = document.createElement('div');
     p.className = 'confetti-piece';
     p.style.left = Math.random()*100+'%';
@@ -1091,40 +1440,127 @@ function launchConfetti(){
   setTimeout(()=>{ c.classList.remove('show'); }, 3500);
 }
 
+// ================= BUSTS =================
+function hasBoost(type){
+  return state.boosts[type] > Date.now();
+}
+
+function getBoostMult(type){
+  return hasBoost(type) ? 2 : 1;
+}
+
+function activateBoost(type, minutes){
+  state.boosts[type] = Date.now() + minutes * 60 * 1000;
+  save();
+  updateUI();
+  showToast('⚡ Буст активирован на ' + minutes + ' мин!');
+}
+
+function renderActiveBoosts(){
+  const c = document.getElementById('activeBoosts');
+  if (!c) return;
+  c.innerHTML = '';
+  const now = Date.now();
+  const list = [
+    { key:'luck',     label:'🍀 Удача x2',    cls:'green' },
+    { key:'income',   label:'💰 Доход x2',    cls:'' },
+    { key:'fastSpin', label:'⚡ Быстрый крут', cls:'purple' },
+    { key:'autoSpin', label:'🤖 Авто',         cls:'' },
+  ];
+  list.forEach(b=>{
+    const remain = state.boosts[b.key] - now;
+    if (remain > 0){
+      const min = Math.ceil(remain / 60000);
+      const div = document.createElement('div');
+      div.className = 'boost-pill ' + b.cls;
+      div.textContent = b.label + ' (' + min + 'м)';
+      c.appendChild(div);
+    }
+  });
+  if (state.subscribedBoostUntil > now){
+    const min = Math.ceil((state.subscribedBoostUntil - now) / 60000);
+    const div = document.createElement('div');
+    div.className = 'boost-pill green';
+    div.textContent = '📢 Подписка (+50%) (' + min + 'м)';
+    c.appendChild(div);
+  }
+}
+
 // ================= SPIN =================
 let spinning = false;
+let autoInterval = null;
+
 function spin(){
   if (spinning) return;
   spinning = true;
   const btn = document.getElementById('spinBtn');
   const cost = state.stake === 1 ? 0 : state.stake * 1000;
+
+  // Проверка подписки
+  if (!state.subscribed){
+    document.getElementById('subscribePopup').classList.add('show');
+    spinning = false;
+    return;
+  }
+
   if (cost > 0 && state.balance < cost){
     showToast('Нужно ' + fmt(cost) + ' ₽ для ставки ×' + state.stake);
     spinning = false;
     return;
   }
   if (cost > 0) state.balance -= cost;
+
   btn.disabled = true;
   btn.textContent = 'КРУТИМ...';
 
   const country = COUNTRIES[state.country];
   const el = document.getElementById('numBig');
+  const fast = hasBoost('fastSpin');
+  const intervalTime = fast ? 30 : 70;
+  const maxTicks = fast ? 8 : 18;
   let ticks = 0;
+
   const interval = setInterval(()=>{
-    el.textContent = country.gen();
-    playTick();
+    if (state.demoMode && state.demoNumber){
+      el.textContent = state.demoNumber;
+    } else {
+      el.textContent = country.gen();
+    }
+    if (!fast) playTick();
     ticks++;
-    if (ticks >= 18){
+    if (ticks >= maxTicks){
       clearInterval(interval);
       finishSpin(country);
     }
-  }, 70);
+  }, intervalTime);
 }
 
 function finishSpin(country){
-  const number = country.gen();
-  const ev = evaluateNumber(number, state.country);
-  const rarity = ev.rarity;
+  let number, rarity, reasons;
+
+  if (state.demoMode && state.demoNumber){
+    // ДЕМО РЕЖИМ
+    number = state.demoNumber;
+    rarity = RARITIES[4]; // legendary
+    reasons = [{ text:'9×9 подряд', mult: 200 }, { text:'топовое окончание 999', mult: 4 }];
+  } else {
+    // Обычный режим: сначала редкость, потом номер
+    rarity = pickRarityWithBoost();
+    const gen = generateNumberByRarity(state.country, rarity.id);
+    number = gen.number;
+    // Если номер не идеальный — оценим его красоту
+    if (rarity.id !== 'legendary' && rarity.id !== 'absolute'){
+      const ev = evaluateNumber(number, state.country);
+      rarity = ev.rarity;
+      reasons = ev.reasons;
+    } else {
+      reasons = gen.reasons;
+      // Оценка красоты (для показа)
+      const ev = evaluateNumber(number, state.country);
+      if (ev.reasons.length > 0 && reasons.length === 0) reasons = ev.reasons;
+    }
+    if (!reasons) reasons = [];
+  }
 
   document.getElementById('numBig').textContent = number;
   document.getElementById('numRegion').textContent = country.flag + ' ' + country.name;
@@ -1141,10 +1577,10 @@ function finishSpin(country){
 
   const bl = document.getElementById('beautyList');
   bl.innerHTML = '';
-  if (ev.reasons.length === 0){
+  if (reasons.length === 0){
     bl.innerHTML = '<div style="color:#666;font-size:12px;">Обычный номер без особенностей</div>';
   } else {
-    ev.reasons.forEach(r=>{
+    reasons.forEach(r=>{
       const div = document.createElement('div');
       div.className = 'item';
       div.innerHTML = `${r.text} <span class="mult">×${r.mult}</span>`;
@@ -1152,13 +1588,15 @@ function finishSpin(country){
     });
   }
 
-  const basePrice = 50 + rnd(80);
-  const price = Math.floor(basePrice * rarity.mult * state.stake);
+  const basePrice = 200 + rnd(300);
+  const boostMult = getBoostMult('income');
+  const price = Math.floor(basePrice * rarity.mult * state.stake * boostMult);
   document.getElementById('rarityPrice').textContent = fmt(price) + ' ₽';
   document.getElementById('rarityPrice').style.color = rarity.color;
 
-  const rewardMult = state.stake === 1 ? 0.3 : 0.5;
-  state.balance += Math.floor(price * rewardMult);
+  const rewardMult = state.stake === 1 ? 0.5 : 0.8;
+  const earned = Math.floor(price * rewardMult);
+  state.balance += earned;
 
   const expGain = 2 + Math.floor(rarity.mult / 2);
   state.exp += expGain;
@@ -1183,7 +1621,6 @@ function finishSpin(country){
     playCash();
   }
 
-  // Тряска карточки
   const card = document.getElementById('numberCard');
   card.classList.add('shake');
   card.style.boxShadow = '0 0 50px ' + rarity.color + '80';
@@ -1197,13 +1634,16 @@ function finishSpin(country){
     country: state.country,
     rarity: rarity.id,
     price,
-    reasons: ev.reasons,
+    reasons,
     operator: country.ops[rnd(country.ops.length)],
   };
 
   state.spins++;
+  state.tasks.spins = (state.tasks.spins||0) + 1;
+  state.tasks.money = (state.tasks.money||0) + earned;
+
   save(); updateUI();
-  showSnack('+' + fmt(Math.floor(price*rewardMult)) + ' ₽  •  +' + expGain + ' опыта');
+  showSnack('+' + fmt(earned) + ' ₽  •  +' + expGain + ' опыта');
 
   spinning = false;
   const btn = document.getElementById('spinBtn');
@@ -1231,7 +1671,37 @@ function updateSpinBtnLabel(){
   }
 }
 
-// ================= SAVE TO PHONE =================
+// ================= AUTO SPIN =================
+function toggleAuto(){
+  const btn = document.getElementById('autoBtn');
+  if (autoInterval){
+    clearInterval(autoInterval);
+    autoInterval = null;
+    btn.classList.remove('active');
+    btn.textContent = 'АВТО';
+    showToast('Автокрут выключен');
+    return;
+  }
+  btn.classList.add('active');
+  btn.textContent = 'СТОП';
+  showToast('🤖 Автокрут включён');
+  autoInterval = setInterval(()=>{
+    if (spinning) return;
+    const cost = state.stake === 1 ? 0 : state.stake * 1000;
+    if (cost > 0 && state.balance < cost){
+      // Нет денег — выключаем
+      clearInterval(autoInterval);
+      autoInterval = null;
+      btn.classList.remove('active');
+      btn.textContent = 'АВТО';
+      showToast('Автокрут остановлен: мало денег');
+      return;
+    }
+    spin();
+  }, 1700);
+}
+
+// ================= SAVE TO PHONE (Симка) =================
 function saveToPhone(){
   if (!state.currentNumber){
     showToast('Сначала крути номер');
@@ -1249,7 +1719,7 @@ function saveToPhone(){
     value: state.currentNumber.price,
     used: false,
   });
-  showToast('📶 Симка сохранена! Вставь её в телефон.');
+  showToast('📶 Симка сохранена! Вкладка "Симки".');
   state.currentNumber = null;
   save(); updateUI();
 }
@@ -1260,47 +1730,86 @@ function shareNum(){
   navigator.clipboard?.writeText(txt).then(()=>showToast('Скопировано!')).catch(()=>{});
 }
 
-// ================= PROFILE =================
-function openProfileOverlay(){
-  updateUI();
-  renderBanners();
-  closeOverlay('menuOverlay');
-  openOverlay('profileOverlay');
+// ================= SUBSCRIBE =================
+function openSubscribePopup(){
+  document.getElementById('subscribePopup').classList.add('show');
 }
 
-function renderBanners(){
-  const g = document.getElementById('bannerGrid');
-  g.innerHTML = '';
-  BANNERS.forEach((b, i)=>{
-    const d = document.createElement('div');
-    d.className = 'banner-opt' + (state.banner === i ? ' active' : '');
-    d.style.background = b;
-    d.onclick = ()=>{
-      state.banner = i;
+function openChannel(){
+  window.open('https://t.me/AppNomerokKanal', '_blank');
+  setTimeout(()=>{
+    showToast('Проверяем подписку...');
+    setTimeout(()=>{
+      state.subscribed = true;
+      state.subscribedBoostUntil = Date.now() + 10 * 60 * 1000; // 10 минут буста
       save();
-      renderBanners();
-      showToast('Баннер установлен!');
-    };
-    g.appendChild(d);
-  });
+      document.getElementById('subscribePopup').classList.remove('show');
+      showToast('✅ Подписка подтверждена! +50% шанс на 10 мин');
+      updateUI();
+    }, 1500);
+  }, 2000);
 }
 
-function changeNick(){
-  const name = prompt('Новый ник:', state.userName);
-  if (name && name.trim()){
-    state.userName = name.trim().slice(0, 20);
-    save(); updateUI();
-    showToast('Ник изменён!');
+function confirmSubscribe(){
+  state.subscribed = true;
+  state.subscribedBoostUntil = Date.now() + 10 * 60 * 1000;
+  save();
+  document.getElementById('subscribePopup').classList.remove('show');
+  showToast('✅ Подписка подтверждена! +50% шанс на 10 мин');
+  updateUI();
+}
+
+// ================= DEMO MODE (Скрытый) =================
+document.getElementById('balanceBox')?.addEventListener('click', ()=>{
+  state.demoClicks = (state.demoClicks||0) + 1;
+  if (state.demoClicks >= 5){
+    state.demoClicks = 0;
+    openDemoPopup();
   }
+  setTimeout(()=>{ state.demoClicks = 0; }, 2000);
+});
+
+function openDemoPopup(){
+  const list = document.getElementById('demoList');
+  list.innerHTML = '';
+  const numbers = [
+    '+7 (999) 999-99-99',
+    '+7 (777) 777-77-77',
+    '+7 (888) 888-88-88',
+    '+7 (123) 456-78-90',
+    '+7 (999) 123-45-67',
+    '+7 (777) 123-45-67',
+  ];
+  numbers.forEach(n=>{
+    const btn = document.createElement('button');
+    btn.className = 'popup-btn';
+    btn.style.marginBottom = '0';
+    btn.textContent = n;
+    btn.onclick = ()=>{
+      state.demoMode = true;
+      state.demoNumber = n;
+      save();
+      closeOverlay('demoPopup');
+      showToast('🎬 Демо: ' + n);
+    };
+    list.appendChild(btn);
+  });
+  document.getElementById('demoPopup').classList.add('show');
+}
+
+function disableDemo(){
+  state.demoMode = false;
+  state.demoNumber = null;
+  save();
+  document.getElementById('demoPopup').classList.remove('show');
+  showToast('❌ Демо выключено');
 }
   // ================= PHONES OVERLAY =================
 function openPhonesOverlay(){
   const g = document.getElementById('phonesGrid');
   g.innerHTML = '';
 
-  const freeSims = state.sims.filter(s=>!s.used);
-
-  if (state.phones.length === 0 && freeSims.length === 0){
+  if (state.phones.length === 0){
     g.innerHTML = '<div class="empty">Пока пусто. Открывай коробки в Магазине!</div>';
     closeOverlay('menuOverlay');
     openOverlay('phonesOverlay');
@@ -1318,31 +1827,10 @@ function openPhonesOverlay(){
       <div class="sim-slot ${p.sim ? 'filled' : ''}" onclick="insertSim(${idx});event.stopPropagation();">
         ${p.sim ? '📶 ' + p.sim.number : '➕ Вставить симку'}
       </div>
+      <button class="sell-btn" onclick="sellPhone(${idx});event.stopPropagation();">💸 Продать за ${fmt(Math.floor(p.price*0.5))} ₽</button>
     `;
     g.appendChild(d);
   });
-
-  if (freeSims.length > 0){
-    const t = document.createElement('div');
-    t.style.cssText = 'grid-column:1/-1;color:#888;font-size:12px;margin-top:12px;font-weight:800;';
-    t.textContent = 'Свободные симки (' + freeSims.length + ')';
-    g.appendChild(t);
-
-    state.sims.forEach((s)=>{
-      if (s.used) return;
-      const rar = getRarityById(s.rarity);
-      const d = document.createElement('div');
-      d.className = 'phone-card';
-      d.style.borderColor = rar.color + '50';
-      d.innerHTML = `
-        <div style="font-size:34px;">📶</div>
-        <div class="name">${s.number}</div>
-        <div class="price" style="color:${rar.color}">${rar.name}</div>
-        <div class="sim-slot filled">Свободна</div>
-      `;
-      g.appendChild(d);
-    });
-  }
 
   closeOverlay('menuOverlay');
   openOverlay('phonesOverlay');
@@ -1359,6 +1847,63 @@ function insertSim(phoneIdx){
   showToast('📶 Симка вставлена в ' + phone.name + '!');
   save(); updateUI();
   openPhonesOverlay();
+}
+
+function sellPhone(idx){
+  const phone = state.phones[idx];
+  if (!phone) return;
+  const price = Math.floor(phone.price * 0.5);
+  state.balance += price;
+  state.phones.splice(idx, 1);
+  state.tasks.sold = (state.tasks.sold||0) + 1;
+  playCash();
+  showToast('💸 +' + fmt(price) + ' ₽ за ' + phone.name);
+  save(); updateUI();
+  openPhonesOverlay();
+}
+
+// ================= SIMS OVERLAY =================
+function openSimsOverlay(){
+  const g = document.getElementById('simsGrid');
+  g.innerHTML = '';
+
+  if (state.sims.length === 0){
+    g.innerHTML = '<div class="empty">Пока пусто. Крути номера и сохраняй их как симки!</div>';
+    closeOverlay('menuOverlay');
+    openOverlay('simsOverlay');
+    return;
+  }
+
+  state.sims.forEach((s, idx)=>{
+    const rar = getRarityById(s.rarity);
+    const d = document.createElement('div');
+    d.className = 'phone-card';
+    d.style.borderColor = rar.color + '50';
+    d.innerHTML = `
+      <div style="font-size:38px;">📶</div>
+      <div class="name">${s.number}</div>
+      <div class="price" style="color:${rar.color}">${rar.name}</div>
+      <div class="sim-slot ${s.used ? '' : 'filled'}">${s.used ? 'Вставлена' : 'Свободна'}</div>
+      <button class="sell-btn" onclick="sellSim(${idx});event.stopPropagation();">💸 Продать за ${fmt(Math.floor(s.value*0.4))} ₽</button>
+    `;
+    g.appendChild(d);
+  });
+
+  closeOverlay('menuOverlay');
+  openOverlay('simsOverlay');
+}
+
+function sellSim(idx){
+  const s = state.sims[idx];
+  if (!s) return;
+  if (s.used){ showToast('Симка вставлена в телефон — сначала вытащи'); return; }
+  const price = Math.floor(s.value * 0.4);
+  state.balance += price;
+  state.sims.splice(idx, 1);
+  playCash();
+  showToast('💸 +' + fmt(price) + ' ₽ за симку');
+  save(); updateUI();
+  openSimsOverlay();
 }
 
 // ================= SHOP =================
@@ -1477,8 +2022,6 @@ function openCase(){
     btn.disabled = false;
     btn.textContent = 'Ещё раз за ' + fmt(box.price) + ' ₽';
 
-    // Звук + анимация
-    const pr = getRarityById(prize.rarity);
     if (prize.rarity === 'absolute'){
       playAbsolute(); launchConfetti();
     } else if (prize.rarity === 'legendary' || prize.rarity === 'mythic'){
@@ -1494,11 +2037,13 @@ function openCase(){
       state.level++;
       state.expMax = expForLevel(state.level);
     }
+    state.tasks.boxes = (state.tasks.boxes||0) + 1;
     save(); updateUI();
     showToast('🎉 ' + prize.name + '!', 3000);
   }, 4200);
 }
-  // ================= COUNTRIES =================
+
+// ================= COUNTRIES =================
 function openCountriesOverlay(){
   const g = document.getElementById('countryGrid');
   g.innerHTML = '';
@@ -1521,7 +2066,7 @@ function openCountriesOverlay(){
 
 // ================= FRIENDS =================
 function openFriendsOverlay(){
-  const link = 'https://t.me/your_bot?start=ref' + (state.spins * 7 % 9999);
+  const link = 'https://t.me/AppNomerokBot?start=ref' + ((tgUser?.id || 0) % 99999);
   document.getElementById('refLink').textContent = link;
   closeOverlay('menuOverlay');
   openOverlay('friendsOverlay');
@@ -1610,7 +2155,6 @@ function spinWheel(){
   btn.disabled = true;
   btn.textContent = 'Крутим...';
 
-  // Тиканье при кручении
   let tickCount = 0;
   const tickInt = setInterval(()=>{
     playTick();
@@ -1648,11 +2192,290 @@ function spinWheel(){
   }, 4700);
 }
 
+// ================= PROFILE =================
+function openProfileOverlay(){
+  updateUI();
+  renderBanners();
+  closeOverlay('menuOverlay');
+  openOverlay('profileOverlay');
+}
+
+function renderBanners(){
+  const g = document.getElementById('bannerGrid');
+  if (!g) return;
+  g.innerHTML = '';
+  BANNERS.forEach((b, i)=>{
+    const d = document.createElement('div');
+    d.className = 'banner-opt' + (state.banner === i ? ' active' : '');
+    d.style.background = b;
+    d.onclick = ()=>{
+      state.banner = i;
+      save();
+      renderBanners();
+      showToast('Баннер установлен!');
+    };
+    g.appendChild(d);
+  });
+}
+
+function changeNick(){
+  const name = prompt('Новый ник:', state.userName);
+  if (name && name.trim()){
+    state.userName = name.trim().slice(0, 20);
+    save(); updateUI();
+    showToast('Ник изменён!');
+  }
+}
+  // ================= TASKS (Ежедневные задания) =================
+function ensureTasksToday(){
+  const key = todayKey();
+  if (state.tasks.date !== key){
+    state.tasks.date = key;
+    state.tasks.spins = 0;
+    state.tasks.boxes = 0;
+    state.tasks.sold = 0;
+    state.tasks.money = 0;
+    state.tasks.claimed = [];
+    save();
+  }
+}
+
+function getTaskProgress(taskId){
+  const t = state.tasks;
+  switch(taskId){
+    case 'spins10': return t.spins || 0;
+    case 'spins50': return t.spins || 0;
+    case 'boxes3':  return t.boxes || 0;
+    case 'boxes10': return t.boxes || 0;
+    case 'sold1':   return t.sold || 0;
+    case 'sold5':   return t.sold || 0;
+    case 'money50k':return t.money || 0;
+    default: return 0;
+  }
+}
+
+function isTaskClaimed(taskId){
+  return (state.tasks.claimed || []).includes(taskId);
+}
+
+function isTaskDone(task){
+  return getTaskProgress(task.id) >= task.target;
+}
+
+function renderTasks(){
+  ensureTasksToday();
+  const list = document.getElementById('tasksList');
+  if (!list) return;
+  list.innerHTML = '';
+  TASK_TEMPLATES.forEach(task=>{
+    const progress = getTaskProgress(task.id);
+    const done = isTaskDone(task);
+    const claimed = isTaskClaimed(task.id);
+    const card = document.createElement('div');
+    card.className = 'task-card' + (done && !claimed ? ' done' : '');
+    card.innerHTML = `
+      <div class="task-icon">${task.icon}</div>
+      <div class="task-info">
+        <div class="task-name">${task.name}</div>
+        <div class="task-progress">${Math.min(progress, task.target)} / ${task.target}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="task-reward">+${fmt(task.reward)} ₽</div>
+        <button class="task-claim" ${!done || claimed ? 'disabled' : ''} onclick="claimTask('${task.id}', ${task.reward})">
+          ${claimed ? '✓' : 'Забрать'}
+        </button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function claimTask(taskId, reward){
+  if (isTaskClaimed(taskId)) return;
+  const task = TASK_TEMPLATES.find(t=>t.id===taskId);
+  if (!task || !isTaskDone(task)) return;
+  state.tasks.claimed.push(taskId);
+  state.balance += reward;
+  state.exp += 30;
+  while (state.exp >= state.expMax){
+    state.exp -= state.expMax;
+    state.level++;
+    state.expMax = expForLevel(state.level);
+  }
+  save(); updateUI();
+  renderTasks();
+  playCash();
+  showToast('🎉 +' + fmt(reward) + ' ₽ за задание!');
+}
+
+function updateTasksBadge(){
+  const badge = document.getElementById('tasksBadge');
+  if (!badge) return;
+  ensureTasksToday();
+  const hasClaimable = TASK_TEMPLATES.some(t => isTaskDone(t) && !isTaskClaimed(t.id));
+  badge.style.display = hasClaimable ? 'flex' : 'none';
+}
+
+// ================= EVENTS =================
+const EVENTS = [
+  { id:'luck30',   icon:'🍀', name:'Двойная удача',      desc:'Шанс на редкости x2',       minutes:30, boost:'luck' },
+  { id:'income60', icon:'💰', name:'Двойной доход',      desc:'Доход x2',                   minutes:60, boost:'income' },
+  { id:'fast15',   icon:'⚡', name:'Быстрый крут',        desc:'Анимация в 3 раза быстрее',  minutes:15, boost:'fastSpin' },
+  { id:'auto30',   icon:'🤖', name:'Автокрут на 30 мин',  desc:'Крутит сам',                 minutes:30, boost:'autoSpin' },
+];
+
+function renderEvents(){
+  const list = document.getElementById('eventsList');
+  if (!list) return;
+  list.innerHTML = '';
+  EVENTS.forEach(ev=>{
+    const remain = state.boosts[ev.boost] - Date.now();
+    const active = remain > 0;
+    const min = active ? Math.ceil(remain/60000) : 0;
+    const card = document.createElement('div');
+    card.className = 'event-card';
+    card.innerHTML = `
+      <div class="event-icon">${ev.icon}</div>
+      <div class="event-info">
+        <div class="event-name">${ev.name}</div>
+        <div class="event-desc">${ev.desc}</div>
+        <div class="event-timer">${active ? '⏱️ Осталось: ' + min + ' мин' : '🎁 Бесплатно!'}</div>
+      </div>
+      <button class="event-btn" ${active ? 'disabled' : ''} onclick="startEvent('${ev.id}')">
+        ${active ? 'Активен' : 'Запустить'}
+      </button>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function startEvent(eventId){
+  const ev = EVENTS.find(e=>e.id===eventId);
+  if (!ev) return;
+  if (state.boosts[ev.boost] > Date.now()){
+    showToast('Ивент уже активен!');
+    return;
+  }
+  state.boosts[ev.boost] = Date.now() + ev.minutes * 60 * 1000;
+  save(); updateUI();
+  renderEvents();
+  playWin();
+  showToast('🎉 ' + ev.name + ' запущен на ' + ev.minutes + ' мин!');
+}
+
+// ================= BOOSTERS =================
+const BOOSTERS = [
+  { id:'luck',     icon:'🍀', name:'Удача x2',        desc:'Шанс на редкости x2 на 1 час', minutes:60, price:50000,  stars:10 },
+  { id:'income',   icon:'💰', name:'Доход x2',        desc:'Доход x2 на 1 час',            minutes:60, price:50000,  stars:10 },
+  { id:'fastSpin', icon:'⚡', name:'Быстрый крут',     desc:'Анимация x3 на 30 мин',        minutes:30, price:30000,  stars:5 },
+  { id:'autoSpin', icon:'🤖', name:'Автокрут на сутки', desc:'Крутит сам 24 часа',           minutes:1440,price:200000, stars:30 },
+];
+
+function renderBoosters(){
+  const list = document.getElementById('boostersList');
+  if (!list) return;
+  list.innerHTML = '';
+  BOOSTERS.forEach(b=>{
+    const remain = state.boosts[b.id] - Date.now();
+    const active = remain > 0;
+    const min = active ? Math.ceil(remain/60000) : 0;
+    const card = document.createElement('div');
+    card.className = 'boost-card';
+    card.innerHTML = `
+      <div class="boost-icon">${b.icon}</div>
+      <div class="boost-info">
+        <div class="boost-name">${b.name}</div>
+        <div class="boost-desc">${b.desc}</div>
+        <div style="font-size:11px;color:${active ? '#2ecc71' : '#ffd700'};font-weight:800;margin-top:4px;">
+          ${active ? '⏱️ ' + min + ' мин' : '💰 ' + fmt(b.price) + ' ₽ / ⭐ ' + b.stars}
+        </div>
+      </div>
+      <button class="boost-buy" ${active ? 'disabled' : ''} onclick="buyBooster('${b.id}')">
+        ${active ? 'Активен' : 'Купить'}
+      </button>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function buyBooster(boosterId){
+  const b = BOOSTERS.find(x=>x.id===boosterId);
+  if (!b) return;
+  if (state.boosts[b.id] > Date.now()){
+    showToast('Буст уже активен!');
+    return;
+  }
+  if (state.balance < b.price){
+    // Оплата звёздами (симуляция)
+    if (confirm('Не хватает ' + fmt(b.price) + ' ₽. Купить за ' + b.stars + ' ⭐ (звёзд)?')){
+      // Симулируем оплату
+      state.boosts[b.id] = Date.now() + b.minutes * 60 * 1000;
+      save(); updateUI();
+      renderBoosters();
+      playWin();
+      showToast('⭐ Куплено за ' + b.stars + ' звёзд!');
+    }
+    return;
+  }
+  state.balance -= b.price;
+  state.boosts[b.id] = Date.now() + b.minutes * 60 * 1000;
+  save(); updateUI();
+  renderBoosters();
+  playWin();
+  showToast('🎉 ' + b.name + ' активирован!');
+}
+
+// ================= SUBSCRIBE OVERLAY =================
+function openSubscribeOverlay(){
+  document.getElementById('subscribePopup').classList.add('show');
+}
+
+// ================= OVERLAY OPENERS (обёртки) =================
+const _origOpenShop = openShopOverlay;
+openShopOverlay = function(){ _origOpenShop(); };
+
+const _origOpenWheel = openWheelOverlay;
+openWheelOverlay = function(){ _origOpenWheel(); };
+
 // ================= INIT =================
 updateUI();
 document.getElementById('numRegion').textContent =
   COUNTRIES[state.country].flag + ' ' + COUNTRIES[state.country].name;
 updateSpinBtnLabel();
+ensureTasksToday();
+
+// Проверка подписки при первом заходе
+setTimeout(()=>{
+  if (!state.subscribed){
+    document.getElementById('subscribePopup').classList.add('show');
+  }
+}, 1500);
+
+// Обновление раз в секунду (для таймеров бустов)
+setInterval(()=>{
+  renderActiveBoosts();
+  const eventsList = document.getElementById('eventsList');
+  if (eventsList && document.getElementById('eventsOverlay').classList.contains('show')){
+    renderEvents();
+  }
+  const boostersList = document.getElementById('boostersList');
+  if (boostersList && document.getElementById('boostersOverlay').classList.contains('show')){
+    renderBoosters();
+  }
+}, 1000);
+
+// Рендер заданий при открытии оверлея
+document.getElementById('tasksOverlay')?.addEventListener('transitionend', renderTasks);
+document.querySelectorAll('.nav-item')[3]?.addEventListener('click', ()=>{ setTimeout(renderTasks, 100); });
+
+// Кнопка "Задания" в меню
+document.querySelectorAll('.cat-card')[5]?.addEventListener('click', ()=>{ setTimeout(renderTasks, 100); });
+
+// Кнопка "Ивенты" в меню
+document.querySelectorAll('.cat-card')[3]?.addEventListener('click', ()=>{ setTimeout(renderEvents, 100); });
+
+// Кнопка "Бусты" в меню
+document.querySelectorAll('.cat-card')[4]?.addEventListener('click', ()=>{ setTimeout(renderBoosters, 100); });
 </script>
 </body>
-  </html>
+    </html>
